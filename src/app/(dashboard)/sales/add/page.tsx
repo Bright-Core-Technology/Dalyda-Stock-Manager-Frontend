@@ -50,7 +50,8 @@ export default function AddSalePage() {
   const debtAmount = Math.max(0, totalPrice - totalPayment)
 
   const [debtCustomerName, setDebtCustomerName] = useState("")
-  const [debtCurrency, setDebtCurrency] = useState<"USD" | "FRANCS">("USD")
+  const overpayment = advanceOption === "none" && cashPayment > totalPrice && totalPrice > 0
+  const needsCustomerName = overpayment || debtAmount > 0
 
   const today = new Date().toISOString().split("T")[0]
 
@@ -101,8 +102,8 @@ export default function AddSalePage() {
       setError("Container, quantity, and unit price are required")
       return
     }
-    if (debtAmount > 0 && !debtCustomerName.trim()) {
-      setError("Customer name is required when there is a debt to create")
+    if (needsCustomerName && !debtCustomerName.trim()) {
+      setError("Customer name is required")
       return
     }
     setError(null)
@@ -129,9 +130,7 @@ export default function AddSalePage() {
         body.advanceId = selectedAdvance.id ?? undefined
       }
 
-      if (amountReceived > totalPrice && debtCustomerName.trim()) {
-        body.customerName = debtCustomerName.trim()
-      } else if (debtAmount > 0 && debtCustomerName.trim()) {
+      if (needsCustomerName && debtCustomerName.trim()) {
         body.customerName = debtCustomerName.trim()
       }
 
@@ -364,16 +363,16 @@ export default function AddSalePage() {
             <div className="mt-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">Select Customer Advance</label>
               <select
-                value={selectedAdvance?.customerName ?? ""}
+                value={selectedAdvance?.id ?? ""}
                 onChange={e => {
-                  const found = advances.find(a => a.customerName === e.target.value) ?? null
+                  const found = advances.find(a => a.id === e.target.value) ?? null
                   setSelectedAdvance(found)
                 }}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">-- Select advance --</option>
                 {advances.map(a => (
-                  <option key={a.customerName} value={a.customerName}>
+                  <option key={a.id} value={a.id}>
                     {a.customerName} — ${a.amount}
                   </option>
                 ))}
@@ -406,37 +405,37 @@ export default function AddSalePage() {
             </div>
           </div>
 
-          {/* Debt to Create */}
+            {/* Overpayment → advance will be created */}
+          {overpayment && (
+            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3 flex justify-between items-center">
+              <span className="text-sm text-green-700 font-medium">Overpayment (advance):</span>
+              <span className="text-sm font-bold text-green-700">+${(cashPayment - totalPrice).toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* Debt → customer underpaid */}
           {debtAmount > 0 && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex justify-between items-center mb-3">
-                <span className="font-semibold text-red-600">Debt to Create:</span>
-                <span className="font-bold text-red-600 text-lg">${debtAmount.toFixed(2)}</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Customer Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    value={debtCustomerName}
-                    onChange={e => setDebtCustomerName(e.target.value)}
-                    placeholder="Enter customer name"
-                    className="w-full border border-red-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                  <select
-                    value={debtCurrency}
-                    onChange={e => setDebtCurrency(e.target.value as "USD" | "FRANCS")}
-                    className="w-full border border-red-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
-                  >
-                    <option value="USD">USD</option>
-                    <option value="FRANCS">Francs</option>
-                  </select>
-                </div>
-              </div>
+            <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 flex justify-between items-center">
+              <span className="text-sm text-red-600 font-medium">Debt remaining:</span>
+              <span className="text-sm font-bold text-red-600">${debtAmount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* Customer name — required for overpayment (advance) or debt */}
+          {needsCustomerName && (
+            <div className="mt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Customer Name <span className="text-red-500">*</span>
+                <span className="text-xs text-gray-400 font-normal ml-1">
+                  {overpayment ? "(for advance record)" : "(for debt record)"}
+                </span>
+              </label>
+              <input
+                value={debtCustomerName}
+                onChange={e => setDebtCustomerName(e.target.value)}
+                placeholder="Enter customer name"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              />
             </div>
           )}
         </div>
