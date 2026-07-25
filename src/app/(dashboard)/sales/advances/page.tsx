@@ -43,14 +43,14 @@ export default function AdvancesPage() {
     const cacheKey = `advances-${page}-${search}`
     const cached = getCached<{ content: any[]; totalElements: number }>(cacheKey)
     if (cached) {
-      setAdvances(cached.content)
+      setAdvances((cached.content ?? []).filter((a: any) => !a.archivedAt))
       setTotalItems(cached.totalElements)
     }
     setLoading(!cached)
     try {
       const res = await fetch(url, { headers })
       const data = await res.json()
-      setAdvances(data.data.content)
+      setAdvances((data.data.content ?? []).filter((a: any) => !a.archivedAt))
       setTotalItems(data.data.totalElements)
       setCached(cacheKey, { content: data.data.content, totalElements: data.data.totalElements })
     } finally {

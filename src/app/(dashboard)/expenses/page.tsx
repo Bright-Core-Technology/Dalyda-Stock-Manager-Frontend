@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
-import { ArrowLeft, Trash2 } from "lucide-react"
+import { ArrowLeft, Trash2, Pencil } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
 
@@ -38,6 +38,13 @@ export default function ExpensesPage() {
   const [deleteTarget, setDeleteTarget] = useState<ViewExpenseDto | null>(null)
   const [deleteError, setDeleteError] = useState("")
   const [deleting, setDeleting] = useState(false)
+
+  const [editTarget, setEditTarget] = useState<ViewExpenseDto | null>(null)
+  const [editDescription, setEditDescription] = useState("")
+  const [editAmount, setEditAmount] = useState("")
+  const [editDate, setEditDate] = useState("")
+  const [editError, setEditError] = useState("")
+  const [editing, setEditing] = useState(false)
 
   const size = 10
 
@@ -96,6 +103,34 @@ export default function ExpensesPage() {
     }
   }
 
+  async function handleEdit() {
+    if (!editTarget) return
+    setEditing(true)
+    setEditError("")
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/till/update/expense/${editTarget.id}`,
+        {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ description: editDescription, amount: Number(editAmount), expenseDate: editDate }),
+        }
+      )
+      if (!res.ok) {
+        const j = await res.json()
+        setEditError(j.message ?? "Update failed")
+        return
+      }
+      invalidate("expenses-")
+      setEditTarget(null)
+      fetchExpenses(page)
+    } catch {
+      setEditError("Network error")
+    } finally {
+      setEditing(false)
+    }
+  }
+
   const from = totalElements === 0 ? 0 : page * size + 1
   const to = Math.min((page + 1) * size, totalElements)
 
@@ -138,12 +173,22 @@ export default function ExpensesPage() {
                 <td className="px-6 py-4 whitespace-nowrap">{exp.recordedBy}</td>
                 {isAdmin && (
                   <td className="px-6 py-4">
-                    <button
-                      onClick={() => { setDeleteTarget(exp); setDeleteError("") }}
-                      className="p-1.5 text-red-500 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => { setEditTarget(exp); setEditDescription(exp.description); setEditAmount(String(exp.amount)); setEditDate(formatDate(exp.expenseDate)); setEditError("") }}
+                        className="p-1.5 text-green-500 hover:bg-green-50 rounded"
+                        title="Edit expense"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => { setDeleteTarget(exp); setDeleteError("") }}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                        title="Delete expense"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 )}
               </tr>
@@ -161,10 +206,18 @@ export default function ExpensesPage() {
           ) : expenses.map((exp, i) => (
             <div key={exp.id ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-4 right-4 flex gap-1">
+                  <button
+                    onClick={() => { setEditTarget(exp); setEditDescription(exp.description); setEditAmount(String(exp.amount)); setEditDate(formatDate(exp.expenseDate)); setEditError("") }}
+                    className="p-1.5 text-green-500 hover:bg-green-50 rounded"
+                    title="Edit expense"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => { setDeleteTarget(exp); setDeleteError("") }}
                     className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                    title="Delete expense"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -220,6 +273,59 @@ export default function ExpensesPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+            <h2 className="font-semibold text-gray-800 mb-4">Edit Expense</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Description</label>
+                <input
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Amount</label>
+                <input
+                  type="number"
+                  value={editAmount}
+                  onChange={e => setEditAmount(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={editDate}
+                  onChange={e => setEditDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            {editError && <p className="text-red-500 text-sm mt-3">{editError}</p>}
+            <div className="flex gap-3 justify-end mt-4">
+              <button
+                onClick={() => setEditTarget(null)}
+                className="px-4 py-2 text-sm rounded-lg border text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEdit}
+                disabled={editing}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {editing ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Modal */}
       {deleteTarget && (

@@ -61,7 +61,7 @@ async function handleSubmit(e: React.FormEvent) {
 
     // setAuth(data.data, null, email)
     const payload = JSON.parse(atob(data.data.split(".")[1]))
-    const name = payload.name ?? email.split("@")[0]
+    const name = [payload.firstName, payload.lastName].filter(Boolean).join(" ") || payload.name || email.split("@")[0]
     setAuth(data.data, payload.role ?? null, email, name)
 
     router.replace("/dashboard")

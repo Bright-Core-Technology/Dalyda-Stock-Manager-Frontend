@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
-import { ArrowLeft, RotateCcw, AlertTriangle } from "lucide-react"
+import { ArrowLeft, RotateCcw, AlertTriangle, Pencil } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
 
@@ -23,6 +23,17 @@ function formatAmount(amount: number, currency: string) {
   const abs = Math.abs(amount)
   const formatted = abs.toLocaleString() + " Francs"
   return amount < 0 ? `-${formatted}` : formatted
+}
+
+function formatType(type: string) {
+  const map: Record<string, string> = {
+    SALE_INCOME: "Sale Income",
+    EXPENSE: "Expense",
+    TILL_TO_BANK: "Till to Bank",
+    BANK_TO_TILL: "Bank to Till",
+    DEBT_PAYMENT: "Debt Payment",
+  }
+  return map[type] ?? type
 }
 
 function formatDateTime(iso: string) {
@@ -53,6 +64,12 @@ export default function TillTransactionsPage() {
   const [reverseTarget, setReverseTarget] = useState<ViewTillTransactionDto | null>(null)
   const [reverseError, setReverseError] = useState("")
   const [reversing, setReversing] = useState(false)
+
+  const [editTarget, setEditTarget] = useState<ViewTillTransactionDto | null>(null)
+  const [editDescription, setEditDescription] = useState("")
+  const [editAmount, setEditAmount] = useState("")
+  const [editError, setEditError] = useState("")
+  const [editing, setEditing] = useState(false)
 
   const size = 10
 
@@ -111,6 +128,34 @@ export default function TillTransactionsPage() {
     }
   }
 
+  async function handleEdit() {
+    if (!editTarget) return
+    setEditing(true)
+    setEditError("")
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/till/update/transaction/${editTarget.id}`,
+        {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ description: editDescription, amount: Number(editAmount) }),
+        }
+      )
+      if (!res.ok) {
+        const j = await res.json()
+        setEditError(j.message ?? "Update failed")
+        return
+      }
+      invalidate("till-transactions-")
+      setEditTarget(null)
+      fetchTransactions(page)
+    } catch {
+      setEditError("Network error")
+    } finally {
+      setEditing(false)
+    }
+  }
+
   const from = totalElements === 0 ? 0 : page * size + 1
   const to = Math.min((page + 1) * size, totalElements)
 
@@ -155,13 +200,22 @@ export default function TillTransactionsPage() {
                 </td>
                 {isAdmin && (
                   <td className="px-6 py-4 text-center">
-                    <button
-                      onClick={() => { setReverseTarget(tx); setReverseError("") }}
-                      className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
-                      title="Reverse transaction"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => { setEditTarget(tx); setEditDescription(tx.description); setEditAmount(String(tx.amount)); setEditError("") }}
+                        className="p-1.5 text-green-500 hover:bg-green-50 rounded"
+                        title="Edit transaction"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => { setReverseTarget(tx); setReverseError("") }}
+                        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
+                        title="Reverse transaction"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 )}
               </tr>
@@ -179,7 +233,14 @@ export default function TillTransactionsPage() {
           ) : transactions.map((tx, i) => (
             <div key={tx.id ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-4 right-4 flex gap-1">
+                  <button
+                    onClick={() => { setEditTarget(tx); setEditDescription(tx.description); setEditAmount(String(tx.amount)); setEditError("") }}
+                    className="p-1.5 text-green-500 hover:bg-green-50 rounded"
+                    title="Edit transaction"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => { setReverseTarget(tx); setReverseError("") }}
                     className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
@@ -239,6 +300,50 @@ export default function TillTransactionsPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Transaction Modal */}
+      {editTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+            <h2 className="font-semibold text-gray-800 mb-4">Edit Transaction</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Description</label>
+                <input
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Amount</label>
+                <input
+                  type="number"
+                  value={editAmount}
+                  onChange={e => setEditAmount(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            {editError && <p className="text-red-500 text-sm mt-3">{editError}</p>}
+            <div className="flex gap-3 justify-end mt-4">
+              <button
+                onClick={() => setEditTarget(null)}
+                className="px-4 py-2 text-sm rounded-lg border text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEdit}
+                disabled={editing}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {editing ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reverse Transaction Modal */}
       {reverseTarget && (

@@ -13,7 +13,7 @@ export default function AddSalePage() {
 
   const [containers, setContainers] = useState<string[]>([])
   const [weights, setWeights] = useState<string[]>([])
-  const [advances, setAdvances] = useState<{ customerName: string; amount: number }[]>([])
+  const [advances, setAdvances] = useState<{ id: string; customerName: string; amount: number }[]>([])
 
   const [containerName, setContainerName] = useState("")
   const [itemCode, setItemCode] = useState("")
@@ -31,7 +31,7 @@ export default function AddSalePage() {
 
   // No Advance | Use Existing
   const [advanceOption, setAdvanceOption] = useState<"none" | "existing">("none")
-  const [selectedAdvance, setSelectedAdvance] = useState<{ customerName: string; amount: number } | null>(null)
+  const [selectedAdvance, setSelectedAdvance] = useState<{ id: string; customerName: string; amount: number } | null>(null)
 
   const [lookupStatus, setLookupStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -108,27 +108,40 @@ export default function AddSalePage() {
     setError(null)
     setIsLoading(true)
     try {
+      // Determine currency and amountReceived
+      const currency = paymentMethod === "FRANCS" ? "FRANCS" : "USD"
+      const amountReceived = paymentMethod === "FRANCS"
+        ? (Number(francsReceived) || 0) / (Number(exchangeRate) || 1)
+        : paymentMethod === "BOTH"
+          ? (Number(usdReceived) || 0) + (Number(francsReceived) || 0) / (Number(exchangeRate) || 1)
+          : Number(usdReceived) || 0
+
+      const body: Record<string, unknown> = {
+        code: itemCode || undefined,
+        quantity: Number(quantity),
+        price: Number(unitPrice),
+        date: today,
+        amountReceived,
+        currency,
+      }
+
+      if (advanceOption === "existing" && selectedAdvance) {
+        body.advanceId = selectedAdvance.id ?? undefined
+      }
+
+      if (amountReceived > totalPrice && debtCustomerName.trim()) {
+        body.customerName = debtCustomerName.trim()
+      } else if (debtAmount > 0 && debtCustomerName.trim()) {
+        body.customerName = debtCustomerName.trim()
+      }
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          code: itemCode || undefined,
-          quantity: Number(quantity),
-          price: Number(unitPrice),
-          date: today,
-        }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.message || "Failed to record sale"); return }
-
-      // Create debt if there's an unpaid balance
-      if (debtAmount > 0) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/debt/add`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ customerName: debtCustomerName.trim(), amount: debtAmount, currency: debtCurrency }),
-        })
-      }
 
       router.replace("/sales")
     } catch {
