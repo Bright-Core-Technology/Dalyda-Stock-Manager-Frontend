@@ -20,6 +20,6 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (token, role, email, name) => set({ token, role, email, name }),
       clearAuth: () => set({ token: null, role: null, email: null, name: null }),
     }),
-    { name: "dalyda-auth", skipHydration: true }
+    { name: "dalyda-auth", skipHydration: false }
   )
 );

@@ -445,7 +445,7 @@ export default function AddSalePage() {
             Cancel
           </Link>
           <button type="submit" disabled={isLoading} className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-            🖨️ {isLoading ? "Recording..." : "Record Sale"}
+            {isLoading ? "Recording..." : "Record Sale"}
           </button>
         </div>
       </form>
