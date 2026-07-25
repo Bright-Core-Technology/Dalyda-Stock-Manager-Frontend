@@ -18,11 +18,11 @@ import { Topbar } from "@/components/layout/Topbar"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const token = useAuthStore(state => state.token)
+  const hasHydrated = useAuthStore(state => state._hasHydrated)
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [navigating, setNavigating] = useState(false)
-  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
     setNavigating(false)
@@ -30,16 +30,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     useAuthStore.persist.rehydrate()
-    setHydrated(true)
   }, [])
 
   useEffect(() => {
-    if (hydrated && token === null) {
+    if (hasHydrated && !token) {
       router.replace("/login")
     }
-  }, [hydrated, token, router])
+  }, [hasHydrated, token, router])
 
-  if (!hydrated) return null
+  if (!hasHydrated) return null
   if (!token) return null
 
   return (
