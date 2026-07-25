@@ -363,16 +363,16 @@ export default function AddSalePage() {
             <div className="mt-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">Select Customer Advance</label>
               <select
-                value={selectedAdvance?.id ?? ""}
+                value={selectedAdvance?.id ?? selectedAdvance?.customerName ?? ""}
                 onChange={e => {
-                  const found = advances.find(a => a.id === e.target.value) ?? null
+                  const found = advances.find(a => (a.id ?? a.customerName) === e.target.value) ?? null
                   setSelectedAdvance(found)
                 }}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">-- Select advance --</option>
-                {advances.map(a => (
-                  <option key={a.id} value={a.id}>
+                {advances.map((a, i) => (
+                  <option key={a.id ?? a.customerName ?? i} value={a.id ?? a.customerName}>
                     {a.customerName} — ${a.amount}
                   </option>
                 ))}

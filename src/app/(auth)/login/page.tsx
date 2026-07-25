@@ -18,7 +18,7 @@ export default function LoginPage() {
       </div>
       <footer>
         <p className="text-center text-gray-500 text-sm mt-6">
-          © 2025 DALYDA Stock Manager. All rights reserved.
+          © 2026 DALYDA Stock Manager. All rights reserved.
         </p>
       </footer>
     </main>
