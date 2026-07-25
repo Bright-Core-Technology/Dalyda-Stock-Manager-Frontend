@@ -298,7 +298,7 @@ export default function TillPage() {
                 {isAdmin && (
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => { setEditExpense(exp); setEditExpenseForm({ description: exp.description, amount: String(exp.amount), expenseDate: exp.expenseDate?.split("T")[0] ?? "" }); setEditExpenseError(null) }} className="p-1.5 text-green-500 hover:bg-green-50 rounded"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => { setEditExpense(exp); setEditExpenseForm({ description: exp.description, amount: String(exp.amount), expenseDate: exp.expenseDate?.split("T")[0] ?? "" }); setEditExpenseError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><Pencil className="w-4 h-4" /></button>
                       <button onClick={() => { setDeleteExpense(exp); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
@@ -319,7 +319,7 @@ export default function TillPage() {
             <div key={exp.id ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-1">
-                  <button onClick={() => { setEditExpense(exp); setEditExpenseForm({ description: exp.description, amount: String(exp.amount), expenseDate: exp.expenseDate?.split("T")[0] ?? "" }); setEditExpenseError(null) }} className="p-1.5 text-green-500 hover:bg-green-50 rounded"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => { setEditExpense(exp); setEditExpenseForm({ description: exp.description, amount: String(exp.amount), expenseDate: exp.expenseDate?.split("T")[0] ?? "" }); setEditExpenseError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><Pencil className="w-4 h-4" /></button>
                   <button onClick={() => { setDeleteExpense(exp); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                 </div>
               )}
@@ -383,7 +383,7 @@ export default function TillPage() {
                 {isAdmin && (
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => { setEditTx(tx); setEditTxForm({ description: tx.description, amount: String(tx.amount) }); setEditTxError(null) }} className="p-1.5 text-green-500 hover:bg-green-50 rounded"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => { setEditTx(tx); setEditTxForm({ description: tx.description, amount: String(tx.amount) }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><Pencil className="w-4 h-4" /></button>
                       <button onClick={() => { setDeleteTx(tx); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
@@ -404,7 +404,7 @@ export default function TillPage() {
             <div key={tx.id ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-1">
-                  <button onClick={() => { setEditTx(tx); setEditTxForm({ description: tx.description, amount: String(tx.amount) }); setEditTxError(null) }} className="p-1.5 text-green-500 hover:bg-green-50 rounded"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => { setEditTx(tx); setEditTxForm({ description: tx.description, amount: String(tx.amount) }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><Pencil className="w-4 h-4" /></button>
                   <button onClick={() => { setDeleteTx(tx); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                 </div>
               )}

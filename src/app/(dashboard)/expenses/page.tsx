@@ -176,7 +176,7 @@ export default function ExpensesPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => { setEditTarget(exp); setEditDescription(exp.description); setEditAmount(String(exp.amount)); setEditDate(formatDate(exp.expenseDate)); setEditError("") }}
-                        className="p-1.5 text-green-500 hover:bg-green-50 rounded"
+                        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
                         title="Edit expense"
                       >
                         <Pencil className="w-4 h-4" />
@@ -209,7 +209,7 @@ export default function ExpensesPage() {
                 <div className="absolute top-4 right-4 flex gap-1">
                   <button
                     onClick={() => { setEditTarget(exp); setEditDescription(exp.description); setEditAmount(String(exp.amount)); setEditDate(formatDate(exp.expenseDate)); setEditError("") }}
-                    className="p-1.5 text-green-500 hover:bg-green-50 rounded"
+                    className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
                     title="Edit expense"
                   >
                     <Pencil className="w-4 h-4" />

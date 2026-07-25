@@ -203,7 +203,7 @@ export default function TillTransactionsPage() {
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => { setEditTarget(tx); setEditDescription(tx.description); setEditAmount(String(tx.amount)); setEditError("") }}
-                        className="p-1.5 text-green-500 hover:bg-green-50 rounded"
+                        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
                         title="Edit transaction"
                       >
                         <Pencil className="w-4 h-4" />
@@ -236,7 +236,7 @@ export default function TillTransactionsPage() {
                 <div className="absolute top-4 right-4 flex gap-1">
                   <button
                     onClick={() => { setEditTarget(tx); setEditDescription(tx.description); setEditAmount(String(tx.amount)); setEditError("") }}
-                    className="p-1.5 text-green-500 hover:bg-green-50 rounded"
+                    className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
                     title="Edit transaction"
                   >
                     <Pencil className="w-4 h-4" />
