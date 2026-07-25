@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { ArrowLeft, RotateCcw, AlertTriangle } from "lucide-react"
 import Link from "next/link"
+import { getCached, setCached, invalidate } from "@/lib/cache"
 
 interface ViewTillTransactionDto {
   id: string
@@ -57,7 +58,14 @@ export default function TillTransactionsPage() {
 
   async function fetchTransactions(p = 0) {
     if (!token) return
-    setLoading(true)
+    const cacheKey = `till-transactions-${p}`
+    const cached = getCached<{ content: ViewTillTransactionDto[]; totalPages: number; totalElements: number }>(cacheKey)
+    if (cached) {
+      setTransactions(cached.content)
+      setTotalPages(cached.totalPages)
+      setTotalElements(cached.totalElements)
+    }
+    setLoading(!cached)
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/till/transactions?page=${p}&size=${size}`,
@@ -65,9 +73,13 @@ export default function TillTransactionsPage() {
       )
       const json = await res.json()
       const pageData = json.data ?? {}
-      setTransactions(pageData.content ?? [])
-      setTotalPages(pageData.totalPages ?? 1)
-      setTotalElements(pageData.totalElements ?? 0)
+      const content = pageData.content ?? []
+      const totalPages = pageData.totalPages ?? 1
+      const totalElements = pageData.totalElements ?? 0
+      setTransactions(content)
+      setTotalPages(totalPages)
+      setTotalElements(totalElements)
+      setCached(cacheKey, { content, totalPages, totalElements })
     } finally {
       setLoading(false)
     }
@@ -89,6 +101,7 @@ export default function TillTransactionsPage() {
         setReverseError(j.message ?? "Reverse failed")
         return
       }
+      invalidate("till-transactions-")
       setReverseTarget(null)
       fetchTransactions(page)
     } catch {

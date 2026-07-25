@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { Search, SquarePen, Trash2, X, Save, DollarSign } from "lucide-react"
 import Link from "next/link"
+import { getCached, setCached, invalidate } from "@/lib/cache"
 
 export default function DebtsPage() {
   const token = useAuthStore(state => state.token)
@@ -33,12 +34,19 @@ export default function DebtsPage() {
     const url = search
       ? `${process.env.NEXT_PUBLIC_API_URL}/debt/search?customerName=${search}&page=${page}&size=${pageSize}`
       : `${process.env.NEXT_PUBLIC_API_URL}/debt/?page=${page}&size=${pageSize}`
-    setLoading(true)
+    const cacheKey = `debts-${page}-${search}`
+    const cached = getCached<{ content: any[]; totalElements: number }>(cacheKey)
+    if (cached) {
+      setDebts(cached.content)
+      setTotalItems(cached.totalElements)
+    }
+    setLoading(!cached)
     try {
       const res = await fetch(url, { headers })
       const data = await res.json()
       setDebts(data.data.content)
       setTotalItems(data.data.totalElements)
+      setCached(cacheKey, { content: data.data.content, totalElements: data.data.totalElements })
     } finally {
       setLoading(false)
     }
@@ -91,6 +99,7 @@ export default function DebtsPage() {
       })
       const data = await res.json()
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
+      invalidate("debts-")
       setEditItem(null)
       fetchDebts()
     } catch {
@@ -113,6 +122,7 @@ export default function DebtsPage() {
         setDeleteError(data.message || "Failed to delete debt")
         return
       }
+      invalidate("debts-")
       setDeleteItem(null)
       fetchDebts()
     } catch {

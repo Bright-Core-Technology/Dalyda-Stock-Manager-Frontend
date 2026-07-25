@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { Search, Plus, SquarePen, Trash2, X, Save } from "lucide-react"
 import Link from "next/link"
+import { getCached, setCached, invalidate } from "@/lib/cache"
 
 function formatAmount(amount: number, currency: string) {
   const num = (amount ?? 0).toLocaleString()
@@ -39,12 +40,19 @@ export default function AdvancesPage() {
     const url = search
       ? `${process.env.NEXT_PUBLIC_API_URL}/advance/search?keyword=${search}&page=${page}&size=${pageSize}`
       : `${process.env.NEXT_PUBLIC_API_URL}/advance/?page=${page}&size=${pageSize}`
-    setLoading(true)
+    const cacheKey = `advances-${page}-${search}`
+    const cached = getCached<{ content: any[]; totalElements: number }>(cacheKey)
+    if (cached) {
+      setAdvances(cached.content)
+      setTotalItems(cached.totalElements)
+    }
+    setLoading(!cached)
     try {
       const res = await fetch(url, { headers })
       const data = await res.json()
       setAdvances(data.data.content)
       setTotalItems(data.data.totalElements)
+      setCached(cacheKey, { content: data.data.content, totalElements: data.data.totalElements })
     } finally {
       setLoading(false)
     }
@@ -73,6 +81,7 @@ export default function AdvancesPage() {
       })
       const data = await res.json()
       if (!res.ok) { setAddError(data.message || "Failed to add advance"); return }
+      invalidate("advances-")
       setShowAdd(false)
       setAddForm({ customerName: "", amount: "" })
       fetchAdvances()
@@ -98,6 +107,7 @@ export default function AdvancesPage() {
       })
       const data = await res.json()
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
+      invalidate("advances-")
       setEditItem(null)
       fetchAdvances()
     } catch {
@@ -120,6 +130,7 @@ export default function AdvancesPage() {
         setDeleteError(data.message || "Failed to delete advance")
         return
       }
+      invalidate("advances-")
       setDeleteItem(null)
       fetchAdvances()
     } catch {

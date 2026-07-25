@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { Package, DollarSign, ShoppingCart } from "lucide-react"
 import Link from "next/link"
+import { getCached, setCached } from "@/lib/cache"
 
 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
@@ -51,6 +52,11 @@ export default function DashboardPage() {
     async function fetchStats() {
       const headers = { Authorization: `Bearer ${token}` }
 
+      const cachedStats = getCached<typeof stats>('dashboard-stats')
+      if (cachedStats) setStats(cachedStats)
+      const cachedRecent = getCached<any[]>('dashboard-recent')
+      if (cachedRecent) setRecentSales(cachedRecent)
+
       if (isAdmin) {
         const [stockTotal, stockValue, salesTotal, salesValue, recent] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/stock/total`, { headers }).then(r => r.json()),
@@ -59,25 +65,29 @@ export default function DashboardPage() {
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/value`, { headers }).then(r => r.json()),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/recent`, { headers }).then(r => r.json()),
         ])
-        setStats({
+        const freshStats = {
           stockTotal: stockTotal.data,
           stockValue: stockValue.data,
           salesTotal: salesTotal.data,
           salesValue: salesValue.data,
-        })
+        }
+        setStats(freshStats)
+        setCached('dashboard-stats', freshStats)
         setRecentSales(recent.data)
+        setCached('dashboard-recent', recent.data)
       } else {
         const [stockTotal, salesTotal, recent] = await Promise.all([
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/stock/total`, { headers }).then(r => r.json()),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/total`, { headers }).then(r => r.json()),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/recent`, { headers }).then(r => r.json()),
         ])
-        setStats(prev => ({
-          ...prev,
-          stockTotal: stockTotal.data,
-          salesTotal: salesTotal.data,
-        }))
+        setStats(prev => {
+          const freshStats = { ...prev, stockTotal: stockTotal.data, salesTotal: salesTotal.data }
+          setCached('dashboard-stats', freshStats)
+          return freshStats
+        })
         setRecentSales(recent.data)
+        setCached('dashboard-recent', recent.data)
       }
     }
 

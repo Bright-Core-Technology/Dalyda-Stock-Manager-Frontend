@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { Search, Download, Plus, SquarePen, Trash2, X, Save, CreditCard, TrendingUp } from "lucide-react"
 import Link from "next/link"
+import { getCached, setCached, invalidate } from "@/lib/cache"
 
 export default function SalesPage() {
   const token = useAuthStore(state => state.token)
@@ -64,12 +65,19 @@ export default function SalesPage() {
     const url = search || startDate || endDate
       ? `${process.env.NEXT_PUBLIC_API_URL}/sales/search?name=${search}&startDate=${startDate}&endDate=${endDate}&page=${page}&size=${pageSize}`
       : `${process.env.NEXT_PUBLIC_API_URL}/sales/?page=${page}&size=${pageSize}`
-    setLoading(true)
+    const cacheKey = `sales-${page}-${search}-${startDate}-${endDate}`
+    const cached = getCached<{ content: any[]; totalElements: number }>(cacheKey)
+    if (cached) {
+      setSales(cached.content)
+      setTotalItems(cached.totalElements)
+    }
+    setLoading(!cached)
     try {
       const res = await fetch(url, { headers })
       const data = await res.json()
       setSales(data.data.content)
       setTotalItems(data.data.totalElements)
+      setCached(cacheKey, { content: data.data.content, totalElements: data.data.totalElements })
     } finally {
       setLoading(false)
     }
@@ -113,6 +121,7 @@ export default function SalesPage() {
       })
       const data = await res.json()
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
+      invalidate("sales-")
       setEditItem(null)
       fetchSales()
     } catch {
@@ -135,6 +144,7 @@ export default function SalesPage() {
         setDeleteError(data.message || "Failed to delete sale")
         return
       }
+      invalidate("sales-")
       setDeleteItem(null)
       fetchSales()
     } catch {

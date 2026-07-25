@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { Search, Upload, Plus, SquarePen, Trash2, X, Save } from "lucide-react"
 import Link from "next/link"
+import { getCached, setCached, invalidate } from "@/lib/cache"
 
 export default function StockPage() {
   const token = useAuthStore(state => state.token)
@@ -40,12 +41,19 @@ export default function StockPage() {
     const url = search || selectedContainer
       ? `${process.env.NEXT_PUBLIC_API_URL}/stock/search?keyword=${search}&containerName=${selectedContainer}&page=${page}&size=${pageSize}`
       : `${process.env.NEXT_PUBLIC_API_URL}/stock/?page=${page}&size=${pageSize}`
-    setLoading(true)
+    const cacheKey = `stock-${page}-${search}-${selectedContainer}`
+    const cached = getCached<{ content: any[]; totalElements: number }>(cacheKey)
+    if (cached) {
+      setStock(cached.content)
+      setTotalItems(cached.totalElements)
+    }
+    setLoading(!cached)
     try {
       const res = await fetch(url, { headers })
       const data = await res.json()
       setStock(data.data.content)
       setTotalItems(data.data.totalElements)
+      setCached(cacheKey, { content: data.data.content, totalElements: data.data.totalElements })
     } finally {
       setLoading(false)
     }
@@ -99,6 +107,7 @@ export default function StockPage() {
         setDeleteError(data.message || "Failed to delete item")
         return
       }
+      invalidate("stock-")
       setDeleteItem(null)
       fetchStock()
     } catch {

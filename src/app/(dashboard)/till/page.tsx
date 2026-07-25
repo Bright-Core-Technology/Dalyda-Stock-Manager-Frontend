@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { Plus, ArrowUpCircle, RefreshCw, X, Save, Trash2 } from "lucide-react"
 import Link from "next/link"
+import { getCached, setCached, invalidate } from "@/lib/cache"
 
 export default function TillPage() {
   const token = useAuthStore(state => state.token)
@@ -45,7 +46,14 @@ export default function TillPage() {
 
   async function fetchAll() {
     const headers = { Authorization: `Bearer ${token}` }
-    setLoading(true)
+    const cached = getCached<{ usdBalance: number; francsBalance: number; expenses: any[]; transactions: any[] }>('till-all')
+    if (cached) {
+      setUsdBalance(cached.usdBalance)
+      setFrancsBalance(cached.francsBalance)
+      setExpenses(cached.expenses)
+      setTransactions(cached.transactions)
+    }
+    setLoading(!cached)
     try {
       const [usd, francs, exp, tx] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/balance/usd`, { headers }).then(r => r.json()),
@@ -53,10 +61,15 @@ export default function TillPage() {
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/expenses/top5`, { headers }).then(r => r.json()),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/transactions/top5`, { headers }).then(r => r.json()),
       ])
-      setUsdBalance(usd.data ?? 0)
-      setFrancsBalance(francs.data ?? 0)
-      setExpenses(Array.isArray(exp.data) ? exp.data : [])
-      setTransactions(Array.isArray(tx.data) ? tx.data : [])
+      const freshUsd = usd.data ?? 0
+      const freshFrancs = francs.data ?? 0
+      const freshExpenses = Array.isArray(exp.data) ? exp.data : []
+      const freshTransactions = Array.isArray(tx.data) ? tx.data : []
+      setUsdBalance(freshUsd)
+      setFrancsBalance(freshFrancs)
+      setExpenses(freshExpenses)
+      setTransactions(freshTransactions)
+      setCached('till-all', { usdBalance: freshUsd, francsBalance: freshFrancs, expenses: freshExpenses, transactions: freshTransactions })
     } catch (err) {
       console.error("Till fetchAll error:", err)
     } finally {
@@ -80,6 +93,7 @@ export default function TillPage() {
       })
       const data = await res.json()
       if (!res.ok) { setExpenseError(data.message || "Failed to add expense"); return }
+      invalidate("till-")
       setShowExpense(false)
       setExpenseForm({ description: "", amount: "", currency: "USD" })
       fetchAll()
@@ -99,6 +113,7 @@ export default function TillPage() {
       })
       const data = await res.json()
       if (!res.ok) { setBankError(data.message || "Transfer failed"); return }
+      invalidate("till-")
       setShowTillToBank(false)
       setBankForm({ amount: "", givenTo: "" })
       fetchAll()

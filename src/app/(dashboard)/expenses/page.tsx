@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { ArrowLeft, Trash2 } from "lucide-react"
 import Link from "next/link"
+import { getCached, setCached, invalidate } from "@/lib/cache"
 
 interface ViewExpenseDto {
   id: string
@@ -42,7 +43,14 @@ export default function ExpensesPage() {
 
   async function fetchExpenses(p = 0) {
     if (!token) return
-    setLoading(true)
+    const cacheKey = `expenses-${p}`
+    const cached = getCached<{ content: ViewExpenseDto[]; totalPages: number; totalElements: number }>(cacheKey)
+    if (cached) {
+      setExpenses(cached.content)
+      setTotalPages(cached.totalPages)
+      setTotalElements(cached.totalElements)
+    }
+    setLoading(!cached)
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/till/expenses?page=${p}&size=${size}`,
@@ -50,9 +58,13 @@ export default function ExpensesPage() {
       )
       const json = await res.json()
       const pageData = json.data ?? {}
-      setExpenses(pageData.content ?? [])
-      setTotalPages(pageData.totalPages ?? 1)
-      setTotalElements(pageData.totalElements ?? 0)
+      const content = pageData.content ?? []
+      const totalPages = pageData.totalPages ?? 1
+      const totalElements = pageData.totalElements ?? 0
+      setExpenses(content)
+      setTotalPages(totalPages)
+      setTotalElements(totalElements)
+      setCached(cacheKey, { content, totalPages, totalElements })
     } finally {
       setLoading(false)
     }
@@ -74,6 +86,7 @@ export default function ExpensesPage() {
         setDeleteError(j.message ?? "Delete failed")
         return
       }
+      invalidate("expenses-")
       setDeleteTarget(null)
       fetchExpenses(page)
     } catch {

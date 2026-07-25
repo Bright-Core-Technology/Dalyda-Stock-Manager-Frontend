@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { Search, Plus, SquarePen, Trash2, RefreshCw, X, Users, Shield, Crown } from "lucide-react"
+import { getCached, setCached, invalidate } from "@/lib/cache"
 
 interface ViewUserDto {
   id: string
@@ -91,7 +92,14 @@ export default function UsersPage() {
 
   const fetchUsers = useCallback(async (p = 0, kw = search) => {
     if (!token) return
-    setLoading(true)
+    const cacheKey = `users-${p}-${kw}`
+    const cached = getCached<{ content: ViewUserDto[]; totalPages: number; totalElements: number }>(cacheKey)
+    if (cached) {
+      setUsers(cached.content)
+      setTotalPages(cached.totalPages)
+      setTotalElements(cached.totalElements)
+    }
+    setLoading(!cached)
     try {
       const url = kw
         ? `${process.env.NEXT_PUBLIC_API_URL}/user/search?keyword=${encodeURIComponent(kw)}&page=${p}&size=${size}`
@@ -99,9 +107,13 @@ export default function UsersPage() {
       const res = await fetch(url, { headers })
       const json = await res.json()
       const pg = json.data ?? {}
-      setUsers(pg.content ?? [])
-      setTotalPages(pg.totalPages ?? 1)
-      setTotalElements(pg.totalElements ?? 0)
+      const content = pg.content ?? []
+      const totalPages = pg.totalPages ?? 1
+      const totalElements = pg.totalElements ?? 0
+      setUsers(content)
+      setTotalPages(totalPages)
+      setTotalElements(totalElements)
+      setCached(cacheKey, { content, totalPages, totalElements })
     } finally {
       setLoading(false)
     }
@@ -133,6 +145,7 @@ export default function UsersPage() {
       if (!res.ok) { setRegError(data.message ?? "Registration failed"); return }
       setRegSuccess("User registered! A temporary password has been emailed.")
       setRegForm({ firstName: "", lastName: "", email: "", phoneNumber: "", role: "USER" })
+      invalidate("users-")
       fetchUsers(0, search); fetchStats()
     } catch { setRegError("Network error") }
     finally { setRegLoading(false) }
@@ -159,6 +172,7 @@ export default function UsersPage() {
       )
       const data = await res.json()
       if (!res.ok) { setEditError(data.message ?? "Update failed"); return }
+      invalidate("users-")
       setEditTarget(null); fetchUsers(page, search)
     } catch { setEditError("Network error") }
     finally { setEditLoading(false) }
@@ -173,6 +187,7 @@ export default function UsersPage() {
         { method: "DELETE", headers }
       )
       if (!res.ok) { const d = await res.json(); setDeleteError(d.message ?? "Delete failed"); return }
+      invalidate("users-")
       setDeleteTarget(null); fetchUsers(page, search); fetchStats()
     } catch { setDeleteError("Network error") }
     finally { setDeleteLoading(false) }
