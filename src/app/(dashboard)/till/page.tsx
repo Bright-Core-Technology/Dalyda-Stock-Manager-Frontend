@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
-import { Plus, ArrowUpCircle, RefreshCw, X, Save, Trash2 } from "lucide-react"
+import { Plus, ArrowUpCircle, RefreshCw, X, Save, Trash2, Pencil } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
 
@@ -43,6 +43,18 @@ export default function TillPage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  // Edit Expense
+  const [editExpense, setEditExpense] = useState<any | null>(null)
+  const [editExpenseForm, setEditExpenseForm] = useState({ description: "", amount: "", expenseDate: "" })
+  const [editExpenseLoading, setEditExpenseLoading] = useState(false)
+  const [editExpenseError, setEditExpenseError] = useState<string | null>(null)
+
+  // Edit Transaction
+  const [editTx, setEditTx] = useState<any | null>(null)
+  const [editTxForm, setEditTxForm] = useState({ description: "", amount: "" })
+  const [editTxLoading, setEditTxLoading] = useState(false)
+  const [editTxError, setEditTxError] = useState<string | null>(null)
 
   async function fetchAll() {
     const headers = { Authorization: `Bearer ${token}` }
@@ -170,6 +182,38 @@ export default function TillPage() {
     finally { setDeleteLoading(false) }
   }
 
+  async function handleEditExpense(e: React.FormEvent) {
+    e.preventDefault()
+    setEditExpenseLoading(true); setEditExpenseError(null)
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/update/expense/${editExpense.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ description: editExpenseForm.description, amount: Number(editExpenseForm.amount), expenseDate: editExpenseForm.expenseDate }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setEditExpenseError(data.message || "Update failed"); return }
+      invalidate("till-"); setEditExpense(null); fetchAll()
+    } catch { setEditExpenseError("Something went wrong.") }
+    finally { setEditExpenseLoading(false) }
+  }
+
+  async function handleEditTx(e: React.FormEvent) {
+    e.preventDefault()
+    setEditTxLoading(true); setEditTxError(null)
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/update/transaction/${editTx.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ description: editTxForm.description, amount: Number(editTxForm.amount) }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setEditTxError(data.message || "Update failed"); return }
+      invalidate("till-"); setEditTx(null); fetchAll()
+    } catch { setEditTxError("Something went wrong.") }
+    finally { setEditTxLoading(false) }
+  }
+
   function formatDate(dt: string) {
     if (!dt) return ""
     const d = new Date(dt)
@@ -253,7 +297,10 @@ export default function TillPage() {
                 <td className="px-6 py-4 whitespace-nowrap">{exp.recordedBy}</td>
                 {isAdmin && (
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => { setDeleteExpense(exp); setDeleteError(null) }} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => { setEditExpense(exp); setEditExpenseForm({ description: exp.description, amount: String(exp.amount), expenseDate: exp.expenseDate?.split("T")[0] ?? "" }); setEditExpenseError(null) }} className="p-1.5 text-green-500 hover:bg-green-50 rounded"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => { setDeleteExpense(exp); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                    </div>
                   </td>
                 )}
               </tr>
@@ -271,10 +318,9 @@ export default function TillPage() {
           ) : expenses.map((exp, i) => (
             <div key={exp.id ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
-                <div className="absolute top-4 right-4">
-                  <button onClick={() => { setDeleteExpense(exp); setDeleteError(null) }} className="text-red-500 hover:text-red-700">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div className="absolute top-4 right-4 flex gap-1">
+                  <button onClick={() => { setEditExpense(exp); setEditExpenseForm({ description: exp.description, amount: String(exp.amount), expenseDate: exp.expenseDate?.split("T")[0] ?? "" }); setEditExpenseError(null) }} className="p-1.5 text-green-500 hover:bg-green-50 rounded"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => { setDeleteExpense(exp); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2 text-sm pr-8">
@@ -336,7 +382,10 @@ export default function TillPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-right">{formatAmount(tx.amount, tx.currency)}</td>
                 {isAdmin && (
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => { setDeleteTx(tx); setDeleteError(null) }} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => { setEditTx(tx); setEditTxForm({ description: tx.description, amount: String(tx.amount) }); setEditTxError(null) }} className="p-1.5 text-green-500 hover:bg-green-50 rounded"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => { setDeleteTx(tx); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                    </div>
                   </td>
                 )}
               </tr>
@@ -354,10 +403,9 @@ export default function TillPage() {
           ) : transactions.map((tx, i) => (
             <div key={tx.id ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
-                <div className="absolute top-4 right-4">
-                  <button onClick={() => { setDeleteTx(tx); setDeleteError(null) }} className="text-red-500 hover:text-red-700">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div className="absolute top-4 right-4 flex gap-1">
+                  <button onClick={() => { setEditTx(tx); setEditTxForm({ description: tx.description, amount: String(tx.amount) }); setEditTxError(null) }} className="p-1.5 text-green-500 hover:bg-green-50 rounded"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => { setDeleteTx(tx); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2 text-sm pr-8">
@@ -498,6 +546,68 @@ export default function TillPage() {
                 <button type="submit" disabled={convertLoading} className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
                   <RefreshCw className="w-4 h-4" />
                   {convertLoading ? "Converting..." : "Convert"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Expense Modal */}
+      {editExpense && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Edit Expense</h2>
+              <button onClick={() => setEditExpense(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleEditExpense} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input value={editExpenseForm.description} onChange={e => setEditExpenseForm({ ...editExpenseForm, description: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                <input type="number" value={editExpenseForm.amount} onChange={e => setEditExpenseForm({ ...editExpenseForm, amount: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input type="date" value={editExpenseForm.expenseDate} onChange={e => setEditExpenseForm({ ...editExpenseForm, expenseDate: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {editExpenseError && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg"><span>⚠</span><p>{editExpenseError}</p></div>}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditExpense(null)} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={editExpenseLoading} className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                  {editExpenseLoading ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Transaction Modal */}
+      {editTx && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Edit Transaction</h2>
+              <button onClick={() => setEditTx(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleEditTx} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input value={editTxForm.description} onChange={e => setEditTxForm({ ...editTxForm, description: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                <input type="number" value={editTxForm.amount} onChange={e => setEditTxForm({ ...editTxForm, amount: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {editTxError && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg"><span>⚠</span><p>{editTxError}</p></div>}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditTx(null)} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={editTxLoading} className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                  {editTxLoading ? "Saving..." : "Save"}
                 </button>
               </div>
             </form>
