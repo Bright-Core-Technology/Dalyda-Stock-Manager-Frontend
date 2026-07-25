@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
-import { ArrowLeft, RotateCcw, AlertTriangle, Pencil } from "lucide-react"
+import { ArrowLeft, RotateCcw, AlertTriangle, SquarePen } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
 
@@ -206,7 +206,7 @@ export default function TillTransactionsPage() {
                         className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
                         title="Edit transaction"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <SquarePen className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => { setReverseTarget(tx); setReverseError("") }}
@@ -239,7 +239,7 @@ export default function TillTransactionsPage() {
                     className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
                     title="Edit transaction"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <SquarePen className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => { setReverseTarget(tx); setReverseError("") }}

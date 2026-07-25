@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
-import { ArrowLeft, Trash2, Pencil } from "lucide-react"
+import { ArrowLeft, Trash2, SquarePen } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
 
@@ -179,7 +179,7 @@ export default function ExpensesPage() {
                         className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
                         title="Edit expense"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <SquarePen className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => { setDeleteTarget(exp); setDeleteError("") }}
@@ -212,7 +212,7 @@ export default function ExpensesPage() {
                     className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
                     title="Edit expense"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <SquarePen className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => { setDeleteTarget(exp); setDeleteError("") }}
