@@ -22,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [navigating, setNavigating] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
     setNavigating(false)
@@ -29,14 +30,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     useAuthStore.persist.rehydrate()
+    setHydrated(true)
   }, [])
 
   useEffect(() => {
-    if (token === null) {
+    if (hydrated && token === null) {
       router.replace("/login")
     }
-  }, [token, router])
+  }, [hydrated, token, router])
 
+  if (!hydrated) return null
   if (!token) return null
 
   return (
