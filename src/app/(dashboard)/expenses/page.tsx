@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { ArrowLeft, Trash2, SquarePen } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
+import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 interface ViewExpenseDto {
   id: string
@@ -56,8 +57,9 @@ export default function ExpensesPage() {
       setExpenses(cached.content)
       setTotalPages(cached.totalPages)
       setTotalElements(cached.totalElements)
+      return
     }
-    setLoading(!cached)
+    setLoading(true)
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/till/expenses?page=${p}&size=${size}`,
@@ -160,9 +162,7 @@ export default function ExpensesPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : expenses.length === 0 ? (
+            {loading ? <SkeletonRows cols={isAdmin ? 6 : 5} /> : expenses.length === 0 ? (
               <tr key="empty"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">No expenses found.</td></tr>
             ) : expenses.map((exp, i) => (
               <tr key={exp.id ?? i} className="text-sm text-gray-700 border-b hover:bg-gray-50">
@@ -199,9 +199,7 @@ export default function ExpensesPage() {
 
         {/* Mobile Cards */}
         <div className="block md:hidden">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : expenses.length === 0 ? (
+          {loading ? <SkeletonCards rows={6} /> : expenses.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No expenses found.</p>
           ) : expenses.map((exp, i) => (
             <div key={exp.id ?? i} className="relative bg-white border-b p-4">

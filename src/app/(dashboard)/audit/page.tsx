@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuthStore } from "@/store/authStore"
+import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 interface AuditTrailDto {
   action: string
@@ -123,33 +124,28 @@ export default function AuditPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading"><td colSpan={4} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : error ? (
+            {loading ? <SkeletonRows cols={4} /> : error ? (
               <tr key="error"><td colSpan={4} className="px-6 py-8 text-center text-red-400 text-sm">{error}</td></tr>
             ) : records.length === 0 ? (
               <tr key="empty"><td colSpan={4} className="px-6 py-8 text-center text-gray-400 text-sm">No audit records found.</td></tr>
-            ) : records.map((rec, i) => (
+            ) : (records.map((rec, i) => (
               <tr key={i} className="text-sm text-gray-700 border-b hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">{actionBadge(rec.action)}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{rec.performedBy}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{formatDateTime(rec.performedAt)}</td>
                 <td className="px-6 py-4 text-gray-500">{rec.details}</td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
         </div>
 
         {/* Mobile Cards */}
         <div className="block md:hidden">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : error ? (
-            <p className="px-4 py-8 text-center text-red-400 text-sm">{error}</p>
-          ) : records.length === 0 ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">No audit records found.</p>
-          ) : records.map((rec, i) => (
+          {loading && <SkeletonCards rows={5} />}
+          {!loading && error && <p className="px-4 py-8 text-center text-red-400 text-sm">{error}</p>}
+          {!loading && !error && records.length === 0 && <p className="px-4 py-8 text-center text-gray-400 text-sm">No audit records found.</p>}
+          {!loading && !error && records.map((rec, i) => (
             <div key={i} className="bg-white border-b p-4">
               <div className="flex items-center justify-between mb-2">
                 <div>{actionBadge(rec.action)}</div>

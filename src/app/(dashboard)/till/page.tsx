@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { Plus, ArrowUpCircle, RefreshCw, X, Save, Trash2, SquarePen } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
+import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 export default function TillPage() {
   const token = useAuthStore(state => state.token)
@@ -64,8 +65,9 @@ export default function TillPage() {
       setFrancsBalance(cached.francsBalance)
       setExpenses(cached.expenses)
       setTransactions(cached.transactions)
+      return
     }
-    setLoading(!cached)
+    setLoading(true)
     try {
       const [usd, francs, exp, tx] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/balance/usd`, { headers }).then(r => r.json()),
@@ -284,9 +286,7 @@ export default function TillPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading-exp"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : expenses.length === 0 ? (
+            {loading ? <SkeletonRows cols={isAdmin ? 6 : 5} rows={3} /> : expenses.length === 0 ? (
               <tr key="empty-exp"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-6 text-center text-gray-400 text-sm">No expenses recorded yet.</td></tr>
             ) : expenses.map((exp, i) => (
               <tr key={exp.id ?? i} className="text-sm text-gray-600 border-b hover:bg-gray-50">
@@ -311,9 +311,7 @@ export default function TillPage() {
 
         {/* Mobile Cards - Expenses */}
         <div className="block md:hidden">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : expenses.length === 0 ? (
+          {loading ? <SkeletonCards rows={3} /> : expenses.length === 0 ? (
             <p className="px-4 py-6 text-center text-gray-400 text-sm">No expenses recorded yet.</p>
           ) : expenses.map((exp, i) => (
             <div key={exp.id ?? i} className="relative bg-white border-b p-4">
@@ -369,9 +367,7 @@ export default function TillPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading-tx"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : transactions.length === 0 ? (
+            {loading ? <SkeletonRows cols={isAdmin ? 6 : 5} rows={3} /> : transactions.length === 0 ? (
               <tr key="empty-tx"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-6 text-center text-gray-400 text-sm">No transactions recorded yet.</td></tr>
             ) : transactions.map((tx, i) => (
               <tr key={tx.id ?? i} className="text-sm text-gray-600 border-b hover:bg-gray-50">
@@ -396,9 +392,7 @@ export default function TillPage() {
 
         {/* Mobile Cards - Transactions */}
         <div className="block md:hidden">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : transactions.length === 0 ? (
+          {loading ? <SkeletonCards rows={3} /> : transactions.length === 0 ? (
             <p className="px-4 py-6 text-center text-gray-400 text-sm">No transactions recorded yet.</p>
           ) : transactions.map((tx, i) => (
             <div key={tx.id ?? i} className="relative bg-white border-b p-4">

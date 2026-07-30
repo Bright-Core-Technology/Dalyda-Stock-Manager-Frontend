@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { Search, Upload, Plus, SquarePen, Trash2, X, Save } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
+import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 export default function StockPage() {
   const token = useAuthStore(state => state.token)
@@ -181,9 +182,7 @@ export default function StockPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading"><td colSpan={isSuperAdmin ? 7 : 6} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : stock.length === 0 ? (
+            {loading ? <SkeletonRows cols={isSuperAdmin ? 7 : 6} /> : stock.length === 0 ? (
               <tr key="empty"><td colSpan={isSuperAdmin ? 7 : 6} className="px-6 py-8 text-center text-gray-400 text-sm">No items found.</td></tr>
             ) : stock.map((item, index) => (
               <tr key={item.id ?? index} className="text-sm text-gray-600 border-b hover:bg-gray-50">
@@ -209,9 +208,7 @@ export default function StockPage() {
 
         {/* Mobile Cards */}
         <div className="block md:hidden divide-y">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : stock.length === 0 ? (
+          {loading ? <SkeletonCards rows={6} /> : stock.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No items found.</p>
           ) : stock.map((item, index) => (
             <div key={item.id ?? index} className="p-4">

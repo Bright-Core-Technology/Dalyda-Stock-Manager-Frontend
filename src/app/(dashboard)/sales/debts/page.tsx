@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { Search, SquarePen, Trash2, X, Save, DollarSign } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
+import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 export default function DebtsPage() {
   const token = useAuthStore(state => state.token)
@@ -39,8 +40,9 @@ export default function DebtsPage() {
     if (cached) {
       setDebts(cached.content)
       setTotalItems(cached.totalElements)
+      return
     }
-    setLoading(!cached)
+    setLoading(true)
     try {
       const res = await fetch(url, { headers })
       const data = await res.json()
@@ -183,9 +185,7 @@ export default function DebtsPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading"><td colSpan={6} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : debts.length === 0 ? (
+            {loading ? <SkeletonRows cols={6} /> : debts.length === 0 ? (
               <tr key="empty"><td colSpan={6} className="px-6 py-8 text-center text-gray-400 text-sm">No debts found.</td></tr>
             ) : debts.map((debt, index) => (
               <tr key={debt.id ?? index} className="text-sm text-gray-600 border-b hover:bg-gray-50">
@@ -221,9 +221,7 @@ export default function DebtsPage() {
 
         {/* Mobile Cards */}
         <div className="block md:hidden divide-y">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : debts.length === 0 ? (
+          {loading ? <SkeletonCards rows={6} /> : debts.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No debts found.</p>
           ) : debts.map((debt, index) => (
             <div key={debt.id ?? index} className="p-4">

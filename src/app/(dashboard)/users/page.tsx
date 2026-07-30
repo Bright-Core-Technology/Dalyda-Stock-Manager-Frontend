@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useAuthStore } from "@/store/authStore"
 import { Search, Plus, SquarePen, Trash2, RefreshCw, X, Users, Shield, Crown } from "lucide-react"
 import { getCached, setCached, invalidate } from "@/lib/cache"
+import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 interface ViewUserDto {
   id: string
@@ -98,8 +99,9 @@ export default function UsersPage() {
       setUsers(cached.content)
       setTotalPages(cached.totalPages)
       setTotalElements(cached.totalElements)
+      return
     }
-    setLoading(!cached)
+    setLoading(true)
     try {
       const url = kw
         ? `${process.env.NEXT_PUBLIC_API_URL}/user/search?keyword=${encodeURIComponent(kw)}&page=${p}&size=${size}`
@@ -286,9 +288,7 @@ export default function UsersPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading"><td colSpan={isSuperAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : users.length === 0 ? (
+            {loading ? <SkeletonRows cols={isSuperAdmin ? 5 : 4} /> : users.length === 0 ? (
               <tr key="empty"><td colSpan={isSuperAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">No users found.</td></tr>
             ) : users.map(user => (
               <tr key={user.id} className="text-sm text-gray-700 border-b hover:bg-gray-50">
@@ -319,9 +319,7 @@ export default function UsersPage() {
 
         {/* Mobile Cards */}
         <div className="block md:hidden">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : users.length === 0 ? (
+          {loading ? <SkeletonCards rows={6} /> : users.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No users found.</p>
           ) : users.map(user => (
             <div key={user.id} className="relative bg-white border-b p-4">

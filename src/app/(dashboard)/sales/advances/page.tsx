@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { Search, Plus, SquarePen, Trash2, X, Save } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
+import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 function formatAmount(amount: number, currency: string) {
   const num = (amount ?? 0).toLocaleString()
@@ -45,8 +46,9 @@ export default function AdvancesPage() {
     if (cached) {
       setAdvances((cached.content ?? []).filter((a: any) => !a.archivedAt))
       setTotalItems(cached.totalElements)
+      return
     }
-    setLoading(!cached)
+    setLoading(true)
     try {
       const res = await fetch(url, { headers })
       const data = await res.json()
@@ -183,9 +185,7 @@ export default function AdvancesPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading"><td colSpan={isAdmin ? 5 : 4} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : advances.length === 0 ? (
+            {loading ? <SkeletonRows cols={isAdmin ? 5 : 4} /> : advances.length === 0 ? (
               <tr key="empty"><td colSpan={isAdmin ? 5 : 4} className="px-6 py-8 text-center text-gray-400 text-sm">No advances found.</td></tr>
             ) : advances.map((adv, index) => (
               <tr key={adv.id ?? index} className="text-sm text-gray-600 border-b hover:bg-gray-50">
@@ -209,9 +209,7 @@ export default function AdvancesPage() {
 
         {/* Mobile Cards */}
         <div className="block md:hidden divide-y">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : advances.length === 0 ? (
+          {loading ? <SkeletonCards rows={6} /> : advances.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No advances found.</p>
           ) : advances.map((adv, index) => (
             <div key={adv.id ?? index} className="p-4">

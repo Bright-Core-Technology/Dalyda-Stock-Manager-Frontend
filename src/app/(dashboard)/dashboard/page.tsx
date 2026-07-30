@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { Package, DollarSign, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached } from "@/lib/cache"
+import { SkeletonStatCards, SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
@@ -47,6 +48,7 @@ export default function DashboardPage() {
   })
 
   const [recentSales, setRecentSales] = useState<any[]>([])
+  const [loading, setLoading] = useState(!getCached('dashboard-stats') || !getCached('dashboard-recent'))
 
   useEffect(() => {
     async function fetchStats() {
@@ -56,7 +58,7 @@ export default function DashboardPage() {
       if (cachedStats) setStats(cachedStats)
       const cachedRecent = getCached<any[]>('dashboard-recent')
       if (cachedRecent) setRecentSales(cachedRecent)
-      if (cachedStats && cachedRecent) return
+      if (cachedStats && cachedRecent) { setLoading(false); return }
 
       if (isAdmin) {
         const [stockTotal, stockValue, salesTotal, salesValue, recent] = await Promise.all([
@@ -90,6 +92,7 @@ export default function DashboardPage() {
         setRecentSales(recent.data)
         setCached('dashboard-recent', recent.data)
       }
+      setLoading(false)
     }
 
     if (token) fetchStats()
@@ -159,7 +162,7 @@ export default function DashboardPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
-        {statCards.map(card => (
+        {loading ? <SkeletonStatCards count={isAdmin ? 4 : 2} /> : statCards.map(card => (
           <StatCard key={card.title} title={card.title} value={card.value} icon={card.icon} iconBg={card.iconBg} />
         ))}
       </div>
@@ -185,7 +188,7 @@ export default function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {recentSales.map((sale, index) => (
+            {loading ? <SkeletonRows cols={isAdmin ? 7 : 5} /> : recentSales.map((sale, index) => (
               <tr key={`${sale.code}-${sale.date}-${index}`} className="text-sm text-gray-600 border-b hover:bg-gray-50">
                 {isAdmin && <td className="px-6 py-4 whitespace-nowrap">{sale.code}</td>}
                 <td className="px-6 py-4 whitespace-nowrap">{sale.name}</td>
@@ -202,7 +205,7 @@ export default function DashboardPage() {
 
         {/* Mobile Cards */}
         <div className="block md:hidden">
-          {recentSales.length === 0 ? (
+          {loading ? <SkeletonCards rows={5} /> : recentSales.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No recent sales.</p>
           ) : recentSales.map((sale, index) => (
             <div key={`${sale.code}-${sale.date}-${index}`} className="bg-white border-b px-4 py-3">

@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { ArrowLeft, RotateCcw, AlertTriangle, SquarePen } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
+import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 interface ViewTillTransactionDto {
   id: string
@@ -81,8 +82,9 @@ export default function TillTransactionsPage() {
       setTransactions(cached.content)
       setTotalPages(cached.totalPages)
       setTotalElements(cached.totalElements)
+      return
     }
-    setLoading(!cached)
+    setLoading(true)
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/till/transactions?page=${p}&size=${size}`,
@@ -185,9 +187,7 @@ export default function TillTransactionsPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : transactions.length === 0 ? (
+            {loading ? <SkeletonRows cols={isAdmin ? 6 : 5} /> : transactions.length === 0 ? (
               <tr key="empty"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">No transactions found.</td></tr>
             ) : transactions.map((tx, i) => (
               <tr key={tx.id ?? i} className="text-sm text-gray-700 border-b hover:bg-gray-50">
@@ -226,9 +226,7 @@ export default function TillTransactionsPage() {
 
         {/* Mobile Cards */}
         <div className="block md:hidden">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : transactions.length === 0 ? (
+          {loading ? <SkeletonCards rows={6} /> : transactions.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No transactions found.</p>
           ) : transactions.map((tx, i) => (
             <div key={tx.id ?? i} className="relative bg-white border-b p-4">

@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { Search, Download, Plus, SquarePen, Trash2, X, Save, CreditCard, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
+import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
 
 export default function SalesPage() {
   const token = useAuthStore(state => state.token)
@@ -249,9 +250,7 @@ export default function SalesPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr key="loading"><td colSpan={isSuperAdmin ? 9 : isAdmin ? 8 : 7} className="px-6 py-8 text-center text-gray-400 text-sm">Loading…</td></tr>
-            ) : sales.length === 0 ? (
+            {loading ? <SkeletonRows cols={isSuperAdmin ? 9 : isAdmin ? 8 : 7} /> : sales.length === 0 ? (
               <tr key="empty"><td colSpan={isSuperAdmin ? 9 : isAdmin ? 8 : 7} className="px-6 py-8 text-center text-gray-400 text-sm">No sales found.</td></tr>
             ) : sales.map((sale, index) => (
               <tr key={sale.id ?? index} className="text-sm text-gray-600 border-b hover:bg-gray-50">
@@ -279,9 +278,7 @@ export default function SalesPage() {
 
         {/* Mobile Cards */}
         <div className="block md:hidden divide-y">
-          {loading ? (
-            <p className="px-4 py-8 text-center text-gray-400 text-sm">Loading…</p>
-          ) : sales.length === 0 ? (
+          {loading ? <SkeletonCards rows={6} /> : sales.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No sales found.</p>
           ) : sales.map((sale, index) => (
             <div key={sale.id ?? index} className="p-4">
