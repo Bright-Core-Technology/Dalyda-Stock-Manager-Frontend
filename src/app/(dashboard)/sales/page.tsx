@@ -37,6 +37,9 @@ export default function SalesPage() {
 
   useEffect(() => {
     async function fetchStats() {
+      const cacheKey = `sales-stats-${isAdmin}`
+      const cached = getCached<typeof stats>(cacheKey)
+      if (cached) { setStats(cached); return }
       const headers = { Authorization: `Bearer ${token}` }
       const [todayCount, weeklyCount] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/today/count`, { headers }).then(r => r.json()),
@@ -47,14 +50,18 @@ export default function SalesPage() {
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/today/amount`, { headers }).then(r => r.json()),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/value`, { headers }).then(r => r.json()),
         ])
-        setStats({
+        const fresh = {
           todayCount: todayCount.data,
           todayAmount: todayAmount.data,
           weeklyCount: weeklyCount.data,
           weeklyAmount: weeklyAmount.data,
-        })
+        }
+        setStats(fresh)
+        setCached(cacheKey, fresh)
       } else {
-        setStats(prev => ({ ...prev, todayCount: todayCount.data, weeklyCount: weeklyCount.data }))
+        const fresh = { todayCount: todayCount.data, todayAmount: 0, weeklyCount: weeklyCount.data, weeklyAmount: 0 }
+        setStats(fresh)
+        setCached(cacheKey, fresh)
       }
     }
     if (token && role) fetchStats()
@@ -70,8 +77,9 @@ export default function SalesPage() {
     if (cached) {
       setSales(cached.content)
       setTotalItems(cached.totalElements)
+      return
     }
-    setLoading(!cached)
+    setLoading(true)
     try {
       const res = await fetch(url, { headers })
       const data = await res.json()
@@ -123,7 +131,7 @@ export default function SalesPage() {
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
       invalidate("sales-")
       setEditItem(null)
-      fetchSales()
+      await fetchSales()
     } catch {
       setEditError("Something went wrong. Please try again.")
     } finally {

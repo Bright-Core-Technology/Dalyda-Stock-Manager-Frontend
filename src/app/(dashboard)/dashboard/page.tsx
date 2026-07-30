@@ -56,6 +56,7 @@ export default function DashboardPage() {
       if (cachedStats) setStats(cachedStats)
       const cachedRecent = getCached<any[]>('dashboard-recent')
       if (cachedRecent) setRecentSales(cachedRecent)
+      if (cachedStats && cachedRecent) return
 
       if (isAdmin) {
         const [stockTotal, stockValue, salesTotal, salesValue, recent] = await Promise.all([

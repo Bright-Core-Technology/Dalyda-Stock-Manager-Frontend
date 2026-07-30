@@ -29,9 +29,12 @@ export default function StockPage() {
 
   useEffect(() => {
     async function fetchMeta() {
+      const cached = getCached<string[]>('stock-container-names')
+      if (cached) { setContainers(cached); return }
       const headers = { Authorization: `Bearer ${token}` }
       const containersRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stock/container/names`, { headers }).then(r => r.json())
       setContainers(containersRes.data)
+      setCached('stock-container-names', containersRes.data)
     }
     if (token) fetchMeta()
   }, [token])
@@ -46,8 +49,9 @@ export default function StockPage() {
     if (cached) {
       setStock(cached.content)
       setTotalItems(cached.totalElements)
+      return
     }
-    setLoading(!cached)
+    setLoading(true)
     try {
       const res = await fetch(url, { headers })
       const data = await res.json()
