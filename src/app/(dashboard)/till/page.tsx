@@ -6,6 +6,7 @@ import { Plus, ArrowUpCircle, RefreshCw, X, Save, Trash2, SquarePen } from "luci
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
 import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
+import { groupTransactions, type TxGroup } from "@/lib/groupTransactions"
 
 export default function TillPage() {
   const token = useAuthStore(state => state.token)
@@ -40,7 +41,7 @@ export default function TillPage() {
 
   // Delete
   const [deleteExpense, setDeleteExpense] = useState<any | null>(null)
-  const [deleteTx, setDeleteTx] = useState<any | null>(null)
+  const [deleteTx, setDeleteTx] = useState<TxGroup | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -173,12 +174,16 @@ export default function TillPage() {
   }
 
   async function handleDeleteTx() {
+    if (!deleteTx) return
     setDeleteLoading(true); setDeleteError(null)
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/delete/transaction/${deleteTx.id}`, {
-        method: "DELETE", headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) { const d = await res.json(); setDeleteError(d.message || "Failed to delete"); return }
+      for (const id of deleteTx.ids) {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/delete/transaction/${id}`, {
+          method: "DELETE", headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) { const d = await res.json(); setDeleteError(d.message || "Failed to delete"); return }
+      }
+      invalidate("till-")
       setDeleteTx(null); fetchAll()
     } catch { setDeleteError("Something went wrong.") }
     finally { setDeleteLoading(false) }
@@ -369,18 +374,22 @@ export default function TillPage() {
           <tbody>
             {loading ? <SkeletonRows cols={isAdmin ? 6 : 5} rows={3} /> : transactions.length === 0 ? (
               <tr key="empty-tx"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-6 text-center text-gray-400 text-sm">No transactions recorded yet.</td></tr>
-            ) : transactions.map((tx, i) => (
-              <tr key={tx.id ?? i} className="text-sm text-gray-600 border-b hover:bg-gray-50">
-                <td className="px-6 py-4">{tx.description}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{formatDate(tx.transactionDate)}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{tx.recordedBy}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{tx.currency}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">{formatAmount(tx.amount, tx.currency)}</td>
+            ) : groupTransactions(transactions).map((g, i) => (
+              <tr key={g.ids.join("-") ?? i} className="text-sm text-gray-600 border-b hover:bg-gray-50">
+                <td className="px-6 py-4">{g.description}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{formatDate(g.transactionDate)}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{g.recordedBy}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{g.merged ? <span className="text-xs text-gray-400 italic">Mixed</span> : g.primary.currency}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
+                  {g.merged && g.secondary
+                    ? <span>{formatAmount(g.primary.amount, g.primary.currency)} + {formatAmount(g.secondary.amount, g.secondary.currency)}</span>
+                    : formatAmount(g.primary.amount, g.primary.currency)}
+                </td>
                 {isAdmin && (
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => { setEditTx(tx); setEditTxForm({ description: tx.description, amount: String(tx.amount) }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>
-                      <button onClick={() => { setDeleteTx(tx); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                      {!g.merged && <button onClick={() => { setEditTx(g.primary); setEditTxForm({ description: g.primary.description, amount: String(g.primary.amount) }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>}
+                      <button onClick={() => { setDeleteTx(g); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 )}
@@ -394,34 +403,38 @@ export default function TillPage() {
         <div className="block md:hidden">
           {loading ? <SkeletonCards rows={3} /> : transactions.length === 0 ? (
             <p className="px-4 py-6 text-center text-gray-400 text-sm">No transactions recorded yet.</p>
-          ) : transactions.map((tx, i) => (
-            <div key={tx.id ?? i} className="relative bg-white border-b p-4">
+          ) : groupTransactions(transactions).map((g, i) => (
+            <div key={g.ids.join("-") ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-1">
-                  <button onClick={() => { setEditTx(tx); setEditTxForm({ description: tx.description, amount: String(tx.amount) }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>
-                  <button onClick={() => { setDeleteTx(tx); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                  {!g.merged && <button onClick={() => { setEditTx(g.primary); setEditTxForm({ description: g.primary.description, amount: String(g.primary.amount) }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>}
+                  <button onClick={() => { setDeleteTx(g); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2 text-sm pr-8">
                 <div className="col-span-2">
                   <p className="text-xs text-gray-400">Description</p>
-                  <p className="font-medium text-gray-700">{tx.description}</p>
+                  <p className="font-medium text-gray-700">{g.description}</p>
                 </div>
-                <div>
+                <div className={g.merged ? "col-span-2" : ""}>
                   <p className="text-xs text-gray-400">Amount</p>
-                  <p className="font-medium text-gray-700">{formatAmount(tx.amount, tx.currency)}</p>
+                  {g.merged && g.secondary
+                    ? <p className="font-medium text-gray-700">{formatAmount(g.primary.amount, g.primary.currency)} + {formatAmount(g.secondary.amount, g.secondary.currency)}</p>
+                    : <p className="font-medium text-gray-700">{formatAmount(g.primary.amount, g.primary.currency)}</p>}
                 </div>
-                <div>
-                  <p className="text-xs text-gray-400">Currency</p>
-                  <p className="text-gray-600">{tx.currency}</p>
-                </div>
+                {!g.merged && (
+                  <div>
+                    <p className="text-xs text-gray-400">Currency</p>
+                    <p className="text-gray-600">{g.primary.currency}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-gray-400">Date &amp; Time</p>
-                  <p className="text-gray-600">{formatDate(tx.transactionDate)}</p>
+                  <p className="text-gray-600">{formatDate(g.transactionDate)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Recorded By</p>
-                  <p className="text-gray-600">{tx.recordedBy}</p>
+                  <p className="text-gray-600">{g.recordedBy}</p>
                 </div>
               </div>
             </div>
@@ -637,7 +650,8 @@ export default function TillPage() {
               <div className="bg-red-100 rounded-full p-2"><Trash2 className="w-5 h-5 text-red-600" /></div>
               <h2 className="text-lg font-semibold">Delete Transaction</h2>
             </div>
-            <p className="text-gray-600 text-sm mb-4">Delete this transaction? This cannot be undone.</p>
+            <p className="text-gray-600 text-sm mb-1">Delete <strong>&quot;{deleteTx?.description}&quot;</strong>? This cannot be undone.</p>
+            {deleteTx?.merged && <p className="text-xs text-amber-600 mb-4">This will delete both the USD and Francs entries for this sale.</p>}
             {deleteError && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4"><span>⚠</span><p>{deleteError}</p></div>}
             <div className="flex gap-3">
               <button onClick={() => setDeleteTx(null)} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>

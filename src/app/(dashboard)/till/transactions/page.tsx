@@ -6,65 +6,9 @@ import { ArrowLeft, RotateCcw, AlertTriangle, SquarePen } from "lucide-react"
 import Link from "next/link"
 import { getCached, setCached, invalidate } from "@/lib/cache"
 import { SkeletonRows, SkeletonCards } from "@/components/SkeletonRows"
+import { groupTransactions, type TillTx, type TxGroup } from "@/lib/groupTransactions"
 
-interface ViewTillTransactionDto {
-  id: string
-  type: string
-  amount: number
-  currency: string
-  description: string
-  recordedBy: string
-  transactionDate: string
-  saleId?: string
-}
-
-interface TxGroup {
-  ids: string[]
-  description: string
-  transactionDate: string
-  recordedBy: string
-  merged: boolean
-  primary: ViewTillTransactionDto
-  secondary?: ViewTillTransactionDto
-}
-
-function groupTransactions(txs: ViewTillTransactionDto[]): TxGroup[] {
-  // Group by saleId when present, otherwise by description+transactionDate pair (mixed-currency same-sale)
-  const pairKey = (tx: ViewTillTransactionDto) =>
-    tx.saleId ? `sale:${tx.saleId}` : `dt:${tx.description}|||${tx.transactionDate}`
-
-  const buckets = new Map<string, ViewTillTransactionDto[]>()
-  for (const tx of txs) {
-    const k = pairKey(tx)
-    const bucket = buckets.get(k) ?? []
-    bucket.push(tx)
-    buckets.set(k, bucket)
-  }
-
-  const groups: TxGroup[] = []
-  const seen = new Set<string>()
-  for (const tx of txs) {
-    const k = pairKey(tx)
-    if (seen.has(k)) continue
-    seen.add(k)
-    const bucket = buckets.get(k)!
-    const hasUsd = bucket.some(t => t.currency === "USD")
-    const hasFc = bucket.some(t => t.currency === "FRANCS")
-    const isMixed = bucket.length === 2 && hasUsd && hasFc
-    if (isMixed) {
-      const usd = bucket.find(t => t.currency === "USD")!
-      const fc = bucket.find(t => t.currency === "FRANCS")!
-      groups.push({ ids: [usd.id, fc.id], description: usd.description, transactionDate: usd.transactionDate, recordedBy: usd.recordedBy, merged: true, primary: usd, secondary: fc })
-    } else {
-      // Single row (or unexpected duplicate same-currency — show each separately)
-      for (const t of bucket) {
-        groups.push({ ids: [t.id], description: t.description, transactionDate: t.transactionDate, recordedBy: t.recordedBy, merged: false, primary: t })
-      }
-    }
-  }
-
-  return groups
-}
+type ViewTillTransactionDto = TillTx
 
 function formatAmount(amount: number, currency: string) {
   if (currency === "USD") {
