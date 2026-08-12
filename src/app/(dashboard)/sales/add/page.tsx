@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Search, DollarSign, CreditCard } from "lucide-react"
+import { invalidate } from "@/lib/cache"
 
 interface StockItem {
   id: string
@@ -174,6 +175,8 @@ export default function AddSalePage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.message || "Failed to record sale"); return }
+      invalidate("sales-")
+      invalidate("stock-")
       router.replace("/sales")
     } catch {
       setError("Something went wrong. Please try again.")

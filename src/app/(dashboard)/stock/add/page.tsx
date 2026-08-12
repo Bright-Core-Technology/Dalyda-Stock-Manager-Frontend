@@ -5,6 +5,7 @@ import { useAuthStore } from "@/store/authStore"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Save } from "lucide-react"
+import { invalidate } from "@/lib/cache"
 
 export default function AddStockPage() {
   const token = useAuthStore(state => state.token)
@@ -43,6 +44,7 @@ export default function AddStockPage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.message || "Failed to add stock"); return }
+      invalidate("stock-")
       router.replace("/stock")
     } catch {
       setError("Something went wrong. Please try again.")
