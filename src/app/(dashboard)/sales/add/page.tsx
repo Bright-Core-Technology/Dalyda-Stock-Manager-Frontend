@@ -54,15 +54,20 @@ export default function AddSalePage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const totalPrice = (Number(quantity) || 0) * (Number(unitPrice) || 0)
-  const cashPayment = paymentMethod === "USD"
-    ? Number(usdReceived) || 0
-    : paymentMethod === "FRANCS"
-      ? Number(francsReceived) || 0
-      : (Number(usdReceived) || 0) + (Number(francsReceived) || 0) / (Number(exchangeRate) || 1)
+  const totalPrice = Math.round(((Number(quantity) || 0) * (Number(unitPrice) || 0)) * 100) / 100
+  const francsInUsd = (paymentMethod === "FRANCS" || paymentMethod === "BOTH") && Number(exchangeRate) > 0
+    ? (Number(francsReceived) || 0) / Number(exchangeRate)
+    : 0
+  const cashPayment = Math.round((
+    paymentMethod === "USD"
+      ? Number(usdReceived) || 0
+      : paymentMethod === "FRANCS"
+        ? francsInUsd
+        : (Number(usdReceived) || 0) + francsInUsd
+  ) * 100) / 100
   const advanceAmount = advanceOption === "existing" && selectedAdvance ? selectedAdvance.amount : 0
-  const totalPayment = cashPayment + advanceAmount
-  const debtAmount = Math.max(0, totalPrice - totalPayment)
+  const totalPayment = Math.round((cashPayment + advanceAmount) * 100) / 100
+  const debtAmount = Math.max(0, Math.round((totalPrice - totalPayment) * 100) / 100)
   const overpayment = advanceOption === "none" && cashPayment > totalPrice && totalPrice > 0
   const needsCustomerName = overpayment || debtAmount > 0
 
@@ -140,17 +145,16 @@ export default function AddSalePage() {
     if (!selectedItem) { setError("Please search and select an item first."); return }
     if (!quantity || Number(quantity) <= 0) { setError("Please enter a valid quantity."); return }
     if (!unitPrice || Number(unitPrice) <= 0) { setError("Please enter a valid unit price."); return }
+    if ((paymentMethod === "FRANCS" || paymentMethod === "BOTH") && (!exchangeRate || Number(exchangeRate) <= 0)) {
+      setError("Please enter the exchange rate (FC per $1)."); return
+    }
     if (needsCustomerName && !debtCustomerName.trim()) { setError("Customer name is required."); return }
 
     setError(null)
     setIsLoading(true)
     try {
       const currency = paymentMethod === "FRANCS" ? "FRANCS" : "USD"
-      const amountReceived = paymentMethod === "FRANCS"
-        ? Number(francsReceived) || 0
-        : paymentMethod === "BOTH"
-          ? (Number(usdReceived) || 0) + (Number(francsReceived) || 0) / (Number(exchangeRate) || 1)
-          : Number(usdReceived) || 0
+      const amountReceived = cashPayment
 
       const body: Record<string, unknown> = {
         code: itemCode,
@@ -362,7 +366,7 @@ export default function AddSalePage() {
             )}
             {(paymentMethod === "FRANCS" || paymentMethod === "BOTH") && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Exchange Rate (FC per $1)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Exchange Rate (FC per $1) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   value={exchangeRate}
@@ -370,6 +374,7 @@ export default function AddSalePage() {
                   placeholder="e.g. 2800"
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {!exchangeRate && <p className="text-xs text-amber-600 mt-1">Enter exchange rate to calculate USD equivalent</p>}
               </div>
             )}
           </div>
