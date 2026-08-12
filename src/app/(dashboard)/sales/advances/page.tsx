@@ -39,7 +39,7 @@ export default function AdvancesPage() {
   async function fetchAdvances() {
     const headers = { Authorization: `Bearer ${token}` }
     const url = search
-      ? `${process.env.NEXT_PUBLIC_API_URL}/advance/search?keyword=${search}&page=${page}&size=${pageSize}`
+      ? `${process.env.NEXT_PUBLIC_API_URL}/advance/search?customerName=${search}&page=${page}&size=${pageSize}`
       : `${process.env.NEXT_PUBLIC_API_URL}/advance/?page=${page}&size=${pageSize}`
     const cacheKey = `advances-${page}-${search}`
     const cached = getCached<{ content: any[]; totalElements: number }>(cacheKey)
