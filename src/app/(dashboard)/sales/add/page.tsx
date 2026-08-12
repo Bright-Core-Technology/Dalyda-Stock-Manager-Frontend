@@ -364,6 +364,11 @@ export default function AddSalePage() {
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {!exchangeRate && <p className="text-xs text-amber-600 mt-1">Enter exchange rate to calculate USD equivalent</p>}
+                {exchangeRate && Number(exchangeRate) > 0 && totalPrice > 0 && (() => {
+                  const usdRemaining = paymentMethod === "BOTH" ? Math.max(0, totalPrice - (Number(usdReceived) || 0)) : totalPrice
+                  const fcNeeded = Math.round(usdRemaining * Number(exchangeRate))
+                  return <p className="text-xs text-blue-600 mt-1 font-medium">FC needed: {fcNeeded.toLocaleString()} FC{paymentMethod === "BOTH" && Number(usdReceived) > 0 ? ` (for remaining $${usdRemaining.toFixed(2)})` : ""}</p>
+                })()}
               </div>
             )}
 
