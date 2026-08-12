@@ -35,7 +35,7 @@ export default function TillPage() {
 
   // Convert Currency form — Figma says "vice versa" so support both directions
   const [convertDir, setConvertDir] = useState<"francs-to-usd" | "usd-to-francs">("francs-to-usd")
-  const [convertForm, setConvertForm] = useState({ amount: "", exchangeRate: "", description: "" })
+  const [convertForm, setConvertForm] = useState({ amount: "", exchangeRate: "" })
   const [convertLoading, setConvertLoading] = useState(false)
   const [convertError, setConvertError] = useState<string | null>(null)
 
@@ -145,8 +145,8 @@ export default function TillPage() {
         ? "/till/conversion/francs-to-usd"
         : "/till/conversion/usd-to-francs"
       const body = convertDir === "francs-to-usd"
-        ? { francsAmount: Number(convertForm.amount), exchangeRate: Number(convertForm.exchangeRate), description: convertForm.description }
-        : { usdAmount: Number(convertForm.amount), exchangeRate: Number(convertForm.exchangeRate), description: convertForm.description }
+        ? { francsAmount: Number(convertForm.amount), exchangeRate: Number(convertForm.exchangeRate) }
+        : { usdAmount: Number(convertForm.amount), exchangeRate: Number(convertForm.exchangeRate) }
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -553,10 +553,6 @@ export default function TillPage() {
                       : `≈ ${(Number(convertForm.amount) * Number(convertForm.exchangeRate)).toLocaleString()} Francs`}
                   </p>
                 )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
-                <input value={convertForm.description} onChange={e => setConvertForm({ ...convertForm, description: e.target.value })} placeholder="Optional note" className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               {convertError && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg"><span>⚠</span><p>{convertError}</p></div>}
               <div className="flex gap-3 pt-2">
