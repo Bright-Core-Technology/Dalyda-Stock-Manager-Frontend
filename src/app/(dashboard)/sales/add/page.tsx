@@ -177,6 +177,7 @@ export default function AddSalePage() {
       if (!res.ok) { setError(data.message || "Failed to record sale"); return }
       invalidate("sales-")
       invalidate("stock-")
+      invalidate("advances-")
       router.replace("/sales")
     } catch {
       setError("Something went wrong. Please try again.")
