@@ -44,8 +44,9 @@ export function groupTransactions(txs: TillTx[]): TxGroup[] {
     if (isMixed) {
       const usd = bucket.find(t => t.currency === "USD")!
       const fc = bucket.find(t => t.currency === "FRANCS")!
-      // For conversions: put the "given" (negative) side first so arrow reads correctly
-      const [primary, secondary] = usd.amount < 0 ? [usd, fc] : fc.amount < 0 ? [fc, usd] : [usd, fc]
+      const isSale = bucket.some(t => t.saleId)
+      // Sales: USD received first. Conversions: FC is the source, show FC → USD
+      const [primary, secondary] = isSale ? [usd, fc] : [fc, usd]
       groups.push({ ids: [primary.id, secondary.id], description: primary.description, transactionDate: primary.transactionDate, recordedBy: primary.recordedBy, merged: true, primary, secondary })
     } else {
       for (const t of bucket) {
