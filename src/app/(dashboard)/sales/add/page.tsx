@@ -182,6 +182,7 @@ export default function AddSalePage() {
       invalidate("sales-")
       invalidate("stock-")
       invalidate("advances-")
+      invalidate("till-")
       router.replace("/sales")
     } catch {
       setError("Something went wrong. Please try again.")
