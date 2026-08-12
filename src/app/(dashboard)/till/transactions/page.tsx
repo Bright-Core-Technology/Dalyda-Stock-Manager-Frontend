@@ -241,15 +241,13 @@ export default function TillTransactionsPage() {
             <div key={g.ids.join("-") ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-1">
-                  {!g.merged && (
-                    <button
-                      onClick={() => { setEditTarget(g.primary); setEditDescription(g.primary.description); setEditAmount(String(g.primary.amount)); setEditError("") }}
-                      className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
-                      title="Edit transaction"
-                    >
-                      <SquarePen className="w-4 h-4" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => { setEditTarget(g); setEditDescription(g.primary.description); setEditAmount(String(g.primary.amount)); setEditSecondAmount(g.secondary ? String(g.secondary.amount) : ""); setEditError("") }}
+                    className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
+                    title="Edit transaction"
+                  >
+                    <SquarePen className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => { setReverseTarget(g); setReverseError("") }}
                     className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
