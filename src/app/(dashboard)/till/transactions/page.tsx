@@ -202,7 +202,7 @@ export default function TillTransactionsPage() {
                     {g.merged && g.secondary ? (
                       <span className="flex items-center justify-end gap-1">
                         <span>{formatAmount(Math.abs(g.primary.amount), g.primary.currency)}</span>
-                        <span className="text-gray-400">→</span>
+                        <span className="text-gray-400">{g.primary.saleId ? "+" : "→"}</span>
                         <span>{formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}</span>
                       </span>
                     ) : formatAmount(g.primary.amount, g.primary.currency)}
@@ -266,7 +266,7 @@ export default function TillTransactionsPage() {
                   <p className="text-xs text-gray-400">Amount</p>
                   {g.merged && g.secondary ? (
                     <p className="font-medium text-gray-800">
-                      {formatAmount(Math.abs(g.primary.amount), g.primary.currency)} → {formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}
+                      {formatAmount(Math.abs(g.primary.amount), g.primary.currency)} {g.primary.saleId ? "+" : "→"} {formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}
                     </p>
                   ) : (
                     <p className={`font-medium ${g.primary.amount < 0 ? "text-red-500" : "text-gray-800"}`}>
