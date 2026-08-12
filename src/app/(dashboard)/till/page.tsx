@@ -395,7 +395,7 @@ export default function TillPage() {
                     ? <span>{formatAmount(Math.abs(g.primary.amount), g.primary.currency)} {g.primary.saleId ? "+" : "→"} {formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}</span>
                     : formatAmount(g.primary.amount, g.primary.currency)}
                 </td>
-                {isAdmin && (
+                {isAdmin && !g.primary.saleId && (
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => { setEditTx(g); setEditTxForm({ description: g.primary.description, amount: String(g.primary.amount), secondAmount: g.secondary ? String(g.secondary.amount) : "" }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>
@@ -415,7 +415,7 @@ export default function TillPage() {
             <p className="px-4 py-6 text-center text-gray-400 text-sm">No transactions recorded yet.</p>
           ) : groupTransactions(transactions).map((g, i) => (
             <div key={g.ids.join("-") ?? i} className="relative bg-white border-b p-4">
-              {isAdmin && (
+              {isAdmin && !g.primary.saleId && (
                 <div className="absolute top-4 right-4 flex gap-1">
                   <button onClick={() => { setEditTx(g); setEditTxForm({ description: g.primary.description, amount: String(g.primary.amount), secondAmount: g.secondary ? String(g.secondary.amount) : "" }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>
                   <button onClick={() => { setDeleteTx(g); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>

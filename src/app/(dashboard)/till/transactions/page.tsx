@@ -207,7 +207,7 @@ export default function TillTransactionsPage() {
                       </span>
                     ) : formatAmount(g.primary.amount, g.primary.currency)}
                   </td>
-                  {isAdmin && (
+                  {isAdmin && !g.primary.saleId && (
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -239,7 +239,7 @@ export default function TillTransactionsPage() {
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No transactions found.</p>
           ) : groups.map((g, i) => (
             <div key={g.ids.join("-") ?? i} className="relative bg-white border-b p-4">
-              {isAdmin && (
+              {isAdmin && !g.primary.saleId && (
                 <div className="absolute top-4 right-4 flex gap-1">
                   <button
                     onClick={() => { setEditTarget(g); setEditDescription(g.primary.description); setEditAmount(String(g.primary.amount)); setEditSecondAmount(g.secondary ? String(g.secondary.amount) : ""); setEditError("") }}
