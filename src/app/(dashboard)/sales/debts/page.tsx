@@ -76,6 +76,7 @@ export default function DebtsPage() {
         setPayError(data.message || "Failed to record payment")
         return
       }
+      invalidate("debts-")
       setPayItem(null)
       setPayAmount("")
       fetchDebts()
