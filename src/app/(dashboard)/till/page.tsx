@@ -417,7 +417,7 @@ export default function TillPage() {
             <div key={g.ids.join("-") ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-1">
-                  {!g.merged && <button onClick={() => { setEditTx(g.primary); setEditTxForm({ description: g.primary.description, amount: String(g.primary.amount) }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>}
+                  <button onClick={() => { setEditTx(g); setEditTxForm({ description: g.primary.description, amount: String(g.primary.amount), secondAmount: g.secondary ? String(g.secondary.amount) : "" }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>
                   <button onClick={() => { setDeleteTx(g); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                 </div>
               )}
