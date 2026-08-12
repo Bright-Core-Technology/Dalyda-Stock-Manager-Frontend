@@ -29,7 +29,7 @@ export default function TillPage() {
   const [expenseError, setExpenseError] = useState<string | null>(null)
 
   // Till to Bank form
-  const [bankForm, setBankForm] = useState({ amount: "", givenTo: "" })
+  const [bankForm, setBankForm] = useState({ amount: "", recipientName: "" })
   const [bankLoading, setBankLoading] = useState(false)
   const [bankError, setBankError] = useState<string | null>(null)
 
@@ -118,19 +118,19 @@ export default function TillPage() {
 
   async function handleTillToBank(e: React.FormEvent) {
     e.preventDefault()
-    if (!bankForm.amount || !bankForm.givenTo) { setBankError("All fields are required"); return }
+    if (!bankForm.amount || !bankForm.recipientName) { setBankError("All fields are required"); return }
     setBankLoading(true); setBankError(null)
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/till-to-bank`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ amount: Number(bankForm.amount), currency: "USD", description: `Given to: ${bankForm.givenTo}` }),
+        body: JSON.stringify({ amount: Number(bankForm.amount), currency: "USD", recipientName: bankForm.recipientName }),
       })
       const data = await res.json()
       if (!res.ok) { setBankError(data.message || "Transfer failed"); return }
       invalidate("till-")
       setShowTillToBank(false)
-      setBankForm({ amount: "", givenTo: "" })
+      setBankForm({ amount: "", recipientName: "" })
       fetchAll()
     } catch { setBankError("Something went wrong.") }
     finally { setBankLoading(false) }
@@ -504,8 +504,8 @@ export default function TillPage() {
                 <p className="text-xs text-blue-500 mt-1">Available: ${usdBalance.toFixed(2)}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Given To <span className="text-red-500">*</span></label>
-                <input value={bankForm.givenTo} onChange={e => setBankForm({ ...bankForm, givenTo: e.target.value })} placeholder="Enter recipient name" className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Recipient Name <span className="text-red-500">*</span></label>
+                <input value={bankForm.recipientName} onChange={e => setBankForm({ ...bankForm, recipientName: e.target.value })} placeholder="Enter recipient name" className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
               </div>
               {bankError && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg"><span>⚠</span><p>{bankError}</p></div>}
               <div className="flex gap-3 pt-2">
