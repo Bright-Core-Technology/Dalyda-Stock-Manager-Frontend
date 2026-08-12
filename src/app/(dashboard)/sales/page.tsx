@@ -131,6 +131,7 @@ export default function SalesPage() {
       const data = await res.json()
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
       invalidate("sales-")
+      setPage(0)
       setEditItem(null)
       await fetchSales()
     } catch {
@@ -154,6 +155,8 @@ export default function SalesPage() {
         return
       }
       invalidate("sales-")
+      invalidate("sales-stats-")
+      setPage(0)
       setDeleteItem(null)
       fetchSales()
     } catch {

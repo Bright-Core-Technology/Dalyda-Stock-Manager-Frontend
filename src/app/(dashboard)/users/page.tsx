@@ -180,7 +180,8 @@ export default function UsersPage() {
       const data = await res.json()
       if (!res.ok) { setEditError(data.message ?? "Update failed"); return }
       invalidate("users-")
-      setEditTarget(null); fetchUsers(page, search)
+      setPage(0)
+      setEditTarget(null); fetchUsers(0, search)
     } catch { setEditError("Network error") }
     finally { setEditLoading(false) }
   }
@@ -195,7 +196,8 @@ export default function UsersPage() {
       )
       if (!res.ok) { const d = await res.json(); setDeleteError(d.message ?? "Delete failed"); return }
       invalidate("users-")
-      setDeleteTarget(null); fetchUsers(page, search); fetchStats()
+      setPage(0)
+      setDeleteTarget(null); fetchUsers(0, search); fetchStats()
     } catch { setDeleteError("Network error") }
     finally { setDeleteLoading(false) }
   }

@@ -77,6 +77,7 @@ export default function DebtsPage() {
         return
       }
       invalidate("debts-")
+      setPage(0)
       setPayItem(null)
       setPayAmount("")
       fetchDebts()

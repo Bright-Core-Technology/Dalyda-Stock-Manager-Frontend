@@ -111,6 +111,7 @@ export default function AdvancesPage() {
       const data = await res.json()
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
       invalidate("advances-")
+      setPage(0)
       setEditItem(null)
       fetchAdvances()
     } catch {
@@ -134,6 +135,7 @@ export default function AdvancesPage() {
         return
       }
       invalidate("advances-")
+      setPage(0)
       setDeleteItem(null)
       fetchAdvances()
     } catch {

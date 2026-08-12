@@ -96,8 +96,9 @@ export default function ExpensesPage() {
         return
       }
       invalidate("expenses-")
+      setPage(0)
       setDeleteTarget(null)
-      fetchExpenses(page)
+      fetchExpenses(0)
     } catch {
       setDeleteError("Network error")
     } finally {
@@ -124,8 +125,9 @@ export default function ExpensesPage() {
         return
       }
       invalidate("expenses-")
+      setPage(0)
       setEditTarget(null)
-      fetchExpenses(page)
+      fetchExpenses(0)
     } catch {
       setEditError("Network error")
     } finally {

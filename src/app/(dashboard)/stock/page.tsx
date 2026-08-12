@@ -90,6 +90,8 @@ export default function StockPage() {
       })
       const data = await res.json()
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
+      invalidate("stock-")
+      setPage(0)
       setEditItem(null)
       fetchStock()
     } catch {
@@ -113,6 +115,7 @@ export default function StockPage() {
         return
       }
       invalidate("stock-")
+      setPage(0)
       setDeleteItem(null)
       fetchStock()
     } catch {
