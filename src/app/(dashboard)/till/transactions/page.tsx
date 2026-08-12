@@ -48,9 +48,10 @@ export default function TillTransactionsPage() {
   const [reverseError, setReverseError] = useState("")
   const [reversing, setReversing] = useState(false)
 
-  const [editTarget, setEditTarget] = useState<ViewTillTransactionDto | null>(null)
+  const [editTarget, setEditTarget] = useState<TxGroup | null>(null)
   const [editDescription, setEditDescription] = useState("")
   const [editAmount, setEditAmount] = useState("")
+  const [editSecondAmount, setEditSecondAmount] = useState("")
   const [editError, setEditError] = useState("")
   const [editing, setEditing] = useState(false)
 
@@ -120,7 +121,7 @@ export default function TillTransactionsPage() {
     setEditError("")
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/till/update/transaction/${editTarget.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/till/update/transaction/${editTarget.primary.id}`,
         {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -131,6 +132,21 @@ export default function TillTransactionsPage() {
         const j = await res.json()
         setEditError(j.message ?? "Update failed")
         return
+      }
+      if (editTarget.merged && editTarget.secondary) {
+        const res2 = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/till/update/transaction/${editTarget.secondary.id}`,
+          {
+            method: "PUT",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ description: editDescription, amount: Number(editSecondAmount) }),
+          }
+        )
+        if (!res2.ok) {
+          const j = await res2.json()
+          setEditError(j.message ?? "Update failed")
+          return
+        }
       }
       invalidate("till-transactions-")
       setEditTarget(null)
@@ -194,15 +210,13 @@ export default function TillTransactionsPage() {
                   {isAdmin && (
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        {!g.merged && (
-                          <button
-                            onClick={() => { setEditTarget(g.primary); setEditDescription(g.primary.description); setEditAmount(String(g.primary.amount)); setEditError("") }}
-                            className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
-                            title="Edit transaction"
-                          >
-                            <SquarePen className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => { setEditTarget(g); setEditDescription(g.primary.description); setEditAmount(String(g.primary.amount)); setEditSecondAmount(g.secondary ? String(g.secondary.amount) : ""); setEditError("") }}
+                          className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
+                          title="Edit transaction"
+                        >
+                          <SquarePen className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => { setReverseTarget(g); setReverseError("") }}
                           className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
@@ -307,7 +321,7 @@ export default function TillTransactionsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Amount</label>
+                <label className="block text-xs text-gray-500 mb-1">{editTarget?.merged ? "USD Amount" : "Amount"}</label>
                 <input
                   type="number"
                   value={editAmount}
@@ -315,6 +329,17 @@ export default function TillTransactionsPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              {editTarget?.merged && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Francs Amount</label>
+                  <input
+                    type="number"
+                    value={editSecondAmount}
+                    onChange={e => setEditSecondAmount(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
             </div>
             {editError && <p className="text-red-500 text-sm mt-3">{editError}</p>}
             <div className="flex gap-3 justify-end mt-4">
