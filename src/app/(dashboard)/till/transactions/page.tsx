@@ -15,6 +15,56 @@ interface ViewTillTransactionDto {
   description: string
   recordedBy: string
   transactionDate: string
+  saleId?: string
+}
+
+interface TxGroup {
+  ids: string[]
+  description: string
+  transactionDate: string
+  recordedBy: string
+  merged: boolean
+  primary: ViewTillTransactionDto
+  secondary?: ViewTillTransactionDto
+}
+
+function groupTransactions(txs: ViewTillTransactionDto[]): TxGroup[] {
+  const saleMap = new Map<string, ViewTillTransactionDto[]>()
+  const noSale: ViewTillTransactionDto[] = []
+
+  for (const tx of txs) {
+    if (tx.saleId) {
+      const existing = saleMap.get(tx.saleId) ?? []
+      existing.push(tx)
+      saleMap.set(tx.saleId, existing)
+    } else {
+      noSale.push(tx)
+    }
+  }
+
+  const groups: TxGroup[] = []
+
+  // Preserve original order by iterating txs and building groups in encounter order
+  const seen = new Set<string>()
+  for (const tx of txs) {
+    if (!tx.saleId) {
+      groups.push({ ids: [tx.id], description: tx.description, transactionDate: tx.transactionDate, recordedBy: tx.recordedBy, merged: false, primary: tx })
+      continue
+    }
+    if (seen.has(tx.saleId)) continue
+    seen.add(tx.saleId)
+    const pair = saleMap.get(tx.saleId)!
+    if (pair.length === 1) {
+      groups.push({ ids: [pair[0].id], description: pair[0].description, transactionDate: pair[0].transactionDate, recordedBy: pair[0].recordedBy, merged: false, primary: pair[0] })
+    } else {
+      // Put USD first, FRANCS second
+      const usd = pair.find(t => t.currency === "USD") ?? pair[0]
+      const fc = pair.find(t => t !== usd) ?? pair[1]
+      groups.push({ ids: [usd.id, fc.id], description: usd.description, transactionDate: usd.transactionDate, recordedBy: usd.recordedBy, merged: true, primary: usd, secondary: fc })
+    }
+  }
+
+  return groups
 }
 
 function formatAmount(amount: number, currency: string) {
@@ -24,17 +74,6 @@ function formatAmount(amount: number, currency: string) {
   const abs = Math.abs(amount)
   const formatted = abs.toLocaleString() + " Francs"
   return amount < 0 ? `-${formatted}` : formatted
-}
-
-function formatType(type: string) {
-  const map: Record<string, string> = {
-    SALE_INCOME: "Sale Income",
-    EXPENSE: "Expense",
-    TILL_TO_BANK: "Till to Bank",
-    BANK_TO_TILL: "Bank to Till",
-    DEBT_PAYMENT: "Debt Payment",
-  }
-  return map[type] ?? type
 }
 
 function formatDateTime(iso: string) {
@@ -62,7 +101,7 @@ export default function TillTransactionsPage() {
   const [totalElements, setTotalElements] = useState(0)
   const [loading, setLoading] = useState(false)
 
-  const [reverseTarget, setReverseTarget] = useState<ViewTillTransactionDto | null>(null)
+  const [reverseTarget, setReverseTarget] = useState<TxGroup | null>(null)
   const [reverseError, setReverseError] = useState("")
   const [reversing, setReversing] = useState(false)
 
@@ -111,14 +150,16 @@ export default function TillTransactionsPage() {
     setReversing(true)
     setReverseError("")
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/till/delete/transaction/${reverseTarget.id}`,
-        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
-      )
-      if (!res.ok) {
-        const j = await res.json()
-        setReverseError(j.message ?? "Reverse failed")
-        return
+      for (const id of reverseTarget.ids) {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/till/delete/transaction/${id}`,
+          { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+        )
+        if (!res.ok) {
+          const j = await res.json()
+          setReverseError(j.message ?? "Reverse failed")
+          return
+        }
       }
       invalidate("till-transactions-")
       setReverseTarget(null)
@@ -158,89 +199,102 @@ export default function TillTransactionsPage() {
     }
   }
 
+  const groups = groupTransactions(transactions)
   const from = totalElements === 0 ? 0 : page * size + 1
   const to = Math.min((page + 1) * size, totalElements)
 
   return (
     <div>
-      {/* Back link */}
       <Link href="/till" className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Till Management
       </Link>
 
-      {/* Header */}
       <h1 className="text-2xl font-bold">Till Transaction History</h1>
       <p className="text-sm text-gray-500 mt-1">Complete record of <span className="text-blue-600">all till transactions</span></p>
 
-      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
+        {/* Desktop Table */}
         <div className="overflow-x-auto hidden md:block">
-        <table className="w-full">
-          <thead>
-            <tr className="text-left text-xs text-gray-500 border-b">
-              <th className="px-6 py-3">Description</th>
-              <th className="px-6 py-3">Date &amp; Time</th>
-              <th className="px-6 py-3">Recorded By</th>
-              <th className="px-6 py-3">Currency</th>
-              <th className="px-6 py-3 text-right">Amount</th>
-              {isAdmin && <th className="px-6 py-3 text-center">Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? <SkeletonRows cols={isAdmin ? 6 : 5} /> : transactions.length === 0 ? (
-              <tr key="empty"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">No transactions found.</td></tr>
-            ) : transactions.map((tx, i) => (
-              <tr key={tx.id ?? i} className="text-sm text-gray-700 border-b hover:bg-gray-50">
-                <td className="px-6 py-4">{tx.description}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{formatDateTime(tx.transactionDate)}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{tx.recordedBy}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{tx.currency === "USD" ? "USD" : "Francs"}</td>
-                <td className={`px-6 py-4 whitespace-nowrap text-right font-medium ${tx.amount < 0 ? "text-red-500" : "text-gray-800"}`}>
-                  {formatAmount(tx.amount, tx.currency)}
-                </td>
-                {isAdmin && (
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => { setEditTarget(tx); setEditDescription(tx.description); setEditAmount(String(tx.amount)); setEditError("") }}
-                        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
-                        title="Edit transaction"
-                      >
-                        <SquarePen className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => { setReverseTarget(tx); setReverseError("") }}
-                        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
-                        title="Reverse transaction"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                )}
+          <table className="w-full">
+            <thead>
+              <tr className="text-left text-xs text-gray-500 border-b">
+                <th className="px-6 py-3">Description</th>
+                <th className="px-6 py-3">Date &amp; Time</th>
+                <th className="px-6 py-3">Recorded By</th>
+                <th className="px-6 py-3">Currency</th>
+                <th className="px-6 py-3 text-right">Amount</th>
+                {isAdmin && <th className="px-6 py-3 text-center">Actions</th>}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? <SkeletonRows cols={isAdmin ? 6 : 5} /> : groups.length === 0 ? (
+                <tr key="empty">
+                  <td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">No transactions found.</td>
+                </tr>
+              ) : groups.map((g, i) => (
+                <tr key={g.ids.join("-") ?? i} className="text-sm text-gray-700 border-b hover:bg-gray-50">
+                  <td className="px-6 py-4">{g.description}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{formatDateTime(g.transactionDate)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{g.recordedBy}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {g.merged ? <span className="text-xs text-gray-400 italic">Mixed</span> : (g.primary.currency === "USD" ? "USD" : "Francs")}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-right font-medium ${g.primary.amount < 0 ? "text-red-500" : "text-gray-800"}`}>
+                    {g.merged && g.secondary ? (
+                      <span className="flex items-center justify-end gap-1">
+                        <span>{formatAmount(g.primary.amount, g.primary.currency)}</span>
+                        <span className="text-gray-400">+</span>
+                        <span>{formatAmount(g.secondary.amount, g.secondary.currency)}</span>
+                      </span>
+                    ) : formatAmount(g.primary.amount, g.primary.currency)}
+                  </td>
+                  {isAdmin && (
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {!g.merged && (
+                          <button
+                            onClick={() => { setEditTarget(g.primary); setEditDescription(g.primary.description); setEditAmount(String(g.primary.amount)); setEditError("") }}
+                            className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
+                            title="Edit transaction"
+                          >
+                            <SquarePen className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => { setReverseTarget(g); setReverseError("") }}
+                          className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
+                          title="Reverse transaction"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Mobile Cards */}
         <div className="block md:hidden">
-          {loading ? <SkeletonCards rows={6} /> : transactions.length === 0 ? (
+          {loading ? <SkeletonCards rows={6} /> : groups.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No transactions found.</p>
-          ) : transactions.map((tx, i) => (
-            <div key={tx.id ?? i} className="relative bg-white border-b p-4">
+          ) : groups.map((g, i) => (
+            <div key={g.ids.join("-") ?? i} className="relative bg-white border-b p-4">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-1">
+                  {!g.merged && (
+                    <button
+                      onClick={() => { setEditTarget(g.primary); setEditDescription(g.primary.description); setEditAmount(String(g.primary.amount)); setEditError("") }}
+                      className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
+                      title="Edit transaction"
+                    >
+                      <SquarePen className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
-                    onClick={() => { setEditTarget(tx); setEditDescription(tx.description); setEditAmount(String(tx.amount)); setEditError("") }}
-                    className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
-                    title="Edit transaction"
-                  >
-                    <SquarePen className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => { setReverseTarget(tx); setReverseError("") }}
+                    onClick={() => { setReverseTarget(g); setReverseError("") }}
                     className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
                     title="Reverse transaction"
                   >
@@ -251,23 +305,33 @@ export default function TillTransactionsPage() {
               <div className="grid grid-cols-2 gap-2 text-sm pr-8">
                 <div className="col-span-2">
                   <p className="text-xs text-gray-400">Description</p>
-                  <p className="font-medium text-gray-700">{tx.description}</p>
+                  <p className="font-medium text-gray-700">{g.description}</p>
                 </div>
-                <div>
+                <div className={g.merged ? "col-span-2" : ""}>
                   <p className="text-xs text-gray-400">Amount</p>
-                  <p className={`font-medium ${tx.amount < 0 ? "text-red-500" : "text-gray-800"}`}>{formatAmount(tx.amount, tx.currency)}</p>
+                  {g.merged && g.secondary ? (
+                    <p className="font-medium text-gray-800">
+                      {formatAmount(g.primary.amount, g.primary.currency)} + {formatAmount(g.secondary.amount, g.secondary.currency)}
+                    </p>
+                  ) : (
+                    <p className={`font-medium ${g.primary.amount < 0 ? "text-red-500" : "text-gray-800"}`}>
+                      {formatAmount(g.primary.amount, g.primary.currency)}
+                    </p>
+                  )}
                 </div>
-                <div>
-                  <p className="text-xs text-gray-400">Currency</p>
-                  <p className="text-gray-600">{tx.currency === "USD" ? "USD" : "Francs"}</p>
-                </div>
+                {!g.merged && (
+                  <div>
+                    <p className="text-xs text-gray-400">Currency</p>
+                    <p className="text-gray-600">{g.primary.currency === "USD" ? "USD" : "Francs"}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-gray-400">Date &amp; Time</p>
-                  <p className="text-gray-600">{formatDateTime(tx.transactionDate)}</p>
+                  <p className="text-gray-600">{formatDateTime(g.transactionDate)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Recorded By</p>
-                  <p className="text-gray-600">{tx.recordedBy}</p>
+                  <p className="text-gray-600">{g.recordedBy}</p>
                 </div>
               </div>
             </div>
@@ -276,25 +340,11 @@ export default function TillTransactionsPage() {
 
         {/* Pagination */}
         <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4 border-t">
-          <p className="text-sm text-gray-500">
-            Showing {from} to {to} of {totalElements} items
-          </p>
+          <p className="text-sm text-gray-500">Showing {from} to {to} of {totalElements} items</p>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="p-1.5 rounded border text-gray-500 hover:bg-gray-50 disabled:opacity-40"
-            >
-              &lt;
-            </button>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="p-1.5 rounded border text-gray-500 hover:bg-gray-50 disabled:opacity-40">&lt;</button>
             <span className="text-sm text-gray-600 px-2">Page {page + 1} of {totalPages}</span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="p-1.5 rounded border text-gray-500 hover:bg-gray-50 disabled:opacity-40"
-            >
-              &gt;
-            </button>
+            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="p-1.5 rounded border text-gray-500 hover:bg-gray-50 disabled:opacity-40">&gt;</button>
           </div>
         </div>
       </div>
@@ -325,17 +375,8 @@ export default function TillTransactionsPage() {
             </div>
             {editError && <p className="text-red-500 text-sm mt-3">{editError}</p>}
             <div className="flex gap-3 justify-end mt-4">
-              <button
-                onClick={() => setEditTarget(null)}
-                className="px-4 py-2 text-sm rounded-lg border text-gray-600 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEdit}
-                disabled={editing}
-                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-              >
+              <button onClick={() => setEditTarget(null)} className="px-4 py-2 text-sm rounded-lg border text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={handleEdit} disabled={editing} className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
                 {editing ? "Saving…" : "Save"}
               </button>
             </div>
@@ -353,22 +394,16 @@ export default function TillTransactionsPage() {
               </div>
               <h2 className="font-semibold text-gray-800">Reverse Transaction</h2>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to reverse the transaction <strong>&quot;{reverseTarget.description}&quot;</strong>?
+            <p className="text-sm text-gray-600 mb-1">
+              Are you sure you want to reverse <strong>&quot;{reverseTarget.description}&quot;</strong>?
             </p>
+            {reverseTarget.merged && (
+              <p className="text-xs text-amber-600 mb-3">This will reverse both the USD and Francs entries for this sale.</p>
+            )}
             {reverseError && <p className="text-red-500 text-sm mb-3">{reverseError}</p>}
             <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setReverseTarget(null)}
-                className="px-4 py-2 text-sm rounded-lg border text-gray-600 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleReverse}
-                disabled={reversing}
-                className="px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
-              >
+              <button onClick={() => setReverseTarget(null)} className="px-4 py-2 text-sm rounded-lg border text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={handleReverse} disabled={reversing} className="px-4 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50">
                 {reversing ? "Reversing…" : "Confirm"}
               </button>
             </div>
