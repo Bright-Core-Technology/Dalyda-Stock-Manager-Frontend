@@ -32,6 +32,7 @@ const ROLES = ["USER", "ADMIN", "SUPER_ADMIN"] as const
 export default function UsersPage() {
   const token = useAuthStore(state => state.token)
   const role = useAuthStore(state => state.role)
+  const loggedInEmail = useAuthStore(state => state.email)
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN"
   const isSuperAdmin = role === "SUPER_ADMIN"
 
@@ -169,7 +170,11 @@ export default function UsersPage() {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json", ...headers },
-          body: JSON.stringify({ firstName: editForm.firstName, lastName: editForm.lastName, phoneNumber: editForm.phoneNumber, role: editForm.role }),
+          body: JSON.stringify(
+            editTarget.email === loggedInEmail
+              ? { firstName: editForm.firstName, lastName: editForm.lastName, phoneNumber: editForm.phoneNumber }
+              : { firstName: editForm.firstName, lastName: editForm.lastName, phoneNumber: editForm.phoneNumber, role: editForm.role }
+          ),
         }
       )
       const data = await res.json()
@@ -305,9 +310,11 @@ export default function UsersPage() {
                       <button onClick={() => openEdit(user)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded" title="Edit">
                         <SquarePen className="w-4 h-4" />
                       </button>
-                      <button onClick={() => { setDeleteTarget(user); setDeleteError("") }} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Delete">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {user.email !== loggedInEmail && (
+                        <button onClick={() => { setDeleteTarget(user); setDeleteError("") }} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 )}
@@ -331,9 +338,11 @@ export default function UsersPage() {
                   <button onClick={() => openEdit(user)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded" title="Edit">
                     <SquarePen className="w-4 h-4" />
                   </button>
-                  <button onClick={() => { setDeleteTarget(user); setDeleteError("") }} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Delete">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {user.email !== loggedInEmail && (
+                    <button onClick={() => { setDeleteTarget(user); setDeleteError("") }} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Delete">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2 text-sm pr-24">
@@ -439,14 +448,16 @@ export default function UsersPage() {
                   <input value={editForm.lastName} onChange={e => setEditForm({ ...editForm, lastName: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value as typeof ROLES[number] })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="USER">User</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="SUPER_ADMIN">Super Admin</option>
-                </select>
-              </div>
+              {editTarget?.email !== loggedInEmail && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <select value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value as typeof ROLES[number] })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="USER">User</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                  </select>
+                </div>
+              )}
               {editError && <p className="text-red-500 text-sm">{editError}</p>}
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setEditTarget(null)} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
