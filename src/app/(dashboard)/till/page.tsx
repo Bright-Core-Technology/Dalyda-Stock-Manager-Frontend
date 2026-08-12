@@ -254,7 +254,6 @@ export default function TillPage() {
         <div className="bg-green-600 rounded-xl p-5 text-white">
           <p className="text-xs opacity-80">Total Dollars</p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-2xl font-light">$</span>
             <span className="text-3xl font-bold">${usdBalance.toFixed(2)}</span>
           </div>
         </div>
