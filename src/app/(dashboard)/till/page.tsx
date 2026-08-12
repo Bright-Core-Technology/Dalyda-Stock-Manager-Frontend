@@ -154,6 +154,7 @@ export default function TillPage() {
       })
       const data = await res.json()
       if (!res.ok) { setConvertError(data.message || "Conversion failed"); return }
+      invalidate("till-")
       setShowConvert(false)
       setConvertForm({ amount: "", exchangeRate: "", description: "" })
       fetchAll()
