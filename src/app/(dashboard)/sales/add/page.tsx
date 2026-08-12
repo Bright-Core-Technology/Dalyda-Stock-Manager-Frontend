@@ -355,18 +355,6 @@ export default function AddSalePage() {
 
             {(paymentMethod === "FRANCS" || paymentMethod === "BOTH") && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Francs Amount Received <span className="text-red-500">*</span></label>
-                <input
-                  type="number"
-                  value={francsReceived}
-                  onChange={e => setFrancsReceived(e.target.value)}
-                  placeholder="Enter amount in francs"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            )}
-            {(paymentMethod === "FRANCS" || paymentMethod === "BOTH") && (
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Exchange Rate (FC per $1) <span className="text-red-500">*</span></label>
                 <input
                   type="number"
@@ -376,6 +364,19 @@ export default function AddSalePage() {
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {!exchangeRate && <p className="text-xs text-amber-600 mt-1">Enter exchange rate to calculate USD equivalent</p>}
+              </div>
+            )}
+
+            {(paymentMethod === "FRANCS" || paymentMethod === "BOTH") && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Francs Amount Received <span className="text-red-500">*</span></label>
+                <input
+                  type="number"
+                  value={francsReceived}
+                  onChange={e => setFrancsReceived(e.target.value)}
+                  placeholder="Enter amount in francs"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
             )}
           </div>
