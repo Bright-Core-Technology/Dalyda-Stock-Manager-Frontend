@@ -125,7 +125,7 @@ export default function TillTransactionsPage() {
         {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ description: editDescription }),
+          body: JSON.stringify({ description: editDescription, amount: Number(editAmount) }),
         }
       )
       if (!res.ok) {
@@ -139,7 +139,7 @@ export default function TillTransactionsPage() {
           {
             method: "PUT",
             headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ description: editDescription }),
+            body: JSON.stringify({ description: editDescription, amount: Number(editSecondAmount) }),
           }
         )
         if (!res2.ok) {
@@ -318,6 +318,26 @@ export default function TillTransactionsPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">{editTarget?.merged ? "USD Amount" : "Amount"}</label>
+                <input
+                  type="number"
+                  value={editAmount}
+                  onChange={e => setEditAmount(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              {editTarget?.merged && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Francs Amount</label>
+                  <input
+                    type="number"
+                    value={editSecondAmount}
+                    onChange={e => setEditSecondAmount(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
             </div>
             {editError && <p className="text-red-500 text-sm mt-3">{editError}</p>}
             <div className="flex gap-3 justify-end mt-4">

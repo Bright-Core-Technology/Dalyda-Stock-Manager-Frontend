@@ -214,7 +214,7 @@ export default function TillPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/update/transaction/${editTx.primary.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ description: editTxForm.description }),
+        body: JSON.stringify({ description: editTxForm.description, amount: Number(editTxForm.amount) }),
       })
       const data = await res.json()
       if (!res.ok) { setEditTxError(data.message || "Update failed"); return }
@@ -222,7 +222,7 @@ export default function TillPage() {
         const res2 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/till/update/transaction/${editTx.secondary.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ description: editTxForm.description }),
+          body: JSON.stringify({ description: editTxForm.description, amount: Number(editTxForm.secondAmount) }),
         })
         const data2 = await res2.json()
         if (!res2.ok) { setEditTxError(data2.message || "Update failed"); return }
@@ -612,6 +612,16 @@ export default function TillPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <input value={editTxForm.description} onChange={e => setEditTxForm({ ...editTxForm, description: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{editTx?.merged ? "USD Amount" : "Amount"}</label>
+                <input type="number" value={editTxForm.amount} onChange={e => setEditTxForm({ ...editTxForm, amount: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {editTx?.merged && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Francs Amount</label>
+                  <input type="number" value={editTxForm.secondAmount} onChange={e => setEditTxForm({ ...editTxForm, secondAmount: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              )}
               {editTxError && <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg"><span>⚠</span><p>{editTxError}</p></div>}
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setEditTx(null)} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
