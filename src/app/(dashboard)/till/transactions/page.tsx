@@ -29,38 +29,37 @@ interface TxGroup {
 }
 
 function groupTransactions(txs: ViewTillTransactionDto[]): TxGroup[] {
-  const saleMap = new Map<string, ViewTillTransactionDto[]>()
-  const noSale: ViewTillTransactionDto[] = []
+  // Group by saleId when present, otherwise by description+transactionDate pair (mixed-currency same-sale)
+  const pairKey = (tx: ViewTillTransactionDto) =>
+    tx.saleId ? `sale:${tx.saleId}` : `dt:${tx.description}|||${tx.transactionDate}`
 
+  const buckets = new Map<string, ViewTillTransactionDto[]>()
   for (const tx of txs) {
-    if (tx.saleId) {
-      const existing = saleMap.get(tx.saleId) ?? []
-      existing.push(tx)
-      saleMap.set(tx.saleId, existing)
-    } else {
-      noSale.push(tx)
-    }
+    const k = pairKey(tx)
+    const bucket = buckets.get(k) ?? []
+    bucket.push(tx)
+    buckets.set(k, bucket)
   }
 
   const groups: TxGroup[] = []
-
-  // Preserve original order by iterating txs and building groups in encounter order
   const seen = new Set<string>()
   for (const tx of txs) {
-    if (!tx.saleId) {
-      groups.push({ ids: [tx.id], description: tx.description, transactionDate: tx.transactionDate, recordedBy: tx.recordedBy, merged: false, primary: tx })
-      continue
-    }
-    if (seen.has(tx.saleId)) continue
-    seen.add(tx.saleId)
-    const pair = saleMap.get(tx.saleId)!
-    if (pair.length === 1) {
-      groups.push({ ids: [pair[0].id], description: pair[0].description, transactionDate: pair[0].transactionDate, recordedBy: pair[0].recordedBy, merged: false, primary: pair[0] })
-    } else {
-      // Put USD first, FRANCS second
-      const usd = pair.find(t => t.currency === "USD") ?? pair[0]
-      const fc = pair.find(t => t !== usd) ?? pair[1]
+    const k = pairKey(tx)
+    if (seen.has(k)) continue
+    seen.add(k)
+    const bucket = buckets.get(k)!
+    const hasUsd = bucket.some(t => t.currency === "USD")
+    const hasFc = bucket.some(t => t.currency === "FRANCS")
+    const isMixed = bucket.length === 2 && hasUsd && hasFc
+    if (isMixed) {
+      const usd = bucket.find(t => t.currency === "USD")!
+      const fc = bucket.find(t => t.currency === "FRANCS")!
       groups.push({ ids: [usd.id, fc.id], description: usd.description, transactionDate: usd.transactionDate, recordedBy: usd.recordedBy, merged: true, primary: usd, secondary: fc })
+    } else {
+      // Single row (or unexpected duplicate same-currency — show each separately)
+      for (const t of bucket) {
+        groups.push({ ids: [t.id], description: t.description, transactionDate: t.transactionDate, recordedBy: t.recordedBy, merged: false, primary: t })
+      }
     }
   }
 
