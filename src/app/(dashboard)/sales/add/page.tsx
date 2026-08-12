@@ -153,16 +153,20 @@ export default function AddSalePage() {
     setError(null)
     setIsLoading(true)
     try {
-      const currency = paymentMethod === "FRANCS" ? "FRANCS" : "USD"
-      const amountReceived = cashPayment
-
       const body: Record<string, unknown> = {
         code: itemCode,
         quantity: Number(quantity),
         price: Number(unitPrice),
         date: today,
-        amountReceived,
-        currency,
+        amountReceived: paymentMethod === "FRANCS"
+          ? Number(francsReceived) || 0
+          : Number(usdReceived) || 0,
+        currency: paymentMethod === "FRANCS" ? "FRANCS" : "USD",
+      }
+
+      if (paymentMethod === "BOTH") {
+        body.secondAmountReceived = Number(francsReceived) || 0
+        body.secondCurrency = "FRANCS"
       }
 
       if (advanceOption === "existing" && selectedAdvance) {
