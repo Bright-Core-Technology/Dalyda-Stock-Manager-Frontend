@@ -24,7 +24,7 @@ export default function AdvancesPage() {
   const pageSize = 10
 
   const [showAdd, setShowAdd] = useState(false)
-  const [addForm, setAddForm] = useState({ customerName: "", amount: "" })
+  const [addForm, setAddForm] = useState({ customerName: "", amount: "", currency: "USD" })
   const [addLoading, setAddLoading] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
 
@@ -79,13 +79,14 @@ export default function AdvancesPage() {
         body: JSON.stringify({
           customerName: addForm.customerName,
           amount: Number(addForm.amount),
+          currency: addForm.currency,
         }),
       })
       const data = await res.json()
       if (!res.ok) { setAddError(data.message || "Failed to add advance"); return }
       invalidate("advances-")
       setShowAdd(false)
-      setAddForm({ customerName: "", amount: "" })
+      setAddForm({ customerName: "", amount: "", currency: "USD" })
       fetchAdvances()
     } catch {
       setAddError("Something went wrong. Please try again.")
@@ -260,6 +261,13 @@ export default function AdvancesPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount <span className="text-red-500">*</span></label>
                 <input type="number" step="0.01" value={addForm.amount} onChange={e => setAddForm({ ...addForm, amount: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Currency <span className="text-red-500">*</span></label>
+                <select value={addForm.currency} onChange={e => setAddForm({ ...addForm, currency: e.target.value })} className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="USD">USD</option>
+                  <option value="FRANCS">Francs</option>
+                </select>
               </div>
               {addError && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
