@@ -8,6 +8,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Dalyda Stock Manager",
   description: "Stock management dashboard",
+  icons: {
+    icon: "/images/logo.jpeg",
+    apple: "/images/logo.jpeg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
