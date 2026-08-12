@@ -393,7 +393,7 @@ export default function TillPage() {
                 <td className="px-6 py-4 whitespace-nowrap">{g.merged ? <span className="text-xs text-gray-500">USD/FRANCS</span> : g.primary.currency}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   {g.merged && g.secondary
-                    ? <span>{formatAmount(g.primary.amount, g.primary.currency)} + {formatAmount(g.secondary.amount, g.secondary.currency)}</span>
+                    ? <span>{formatAmount(Math.abs(g.primary.amount), g.primary.currency)} → {formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}</span>
                     : formatAmount(g.primary.amount, g.primary.currency)}
                 </td>
                 {isAdmin && (
@@ -430,7 +430,7 @@ export default function TillPage() {
                 <div className={g.merged ? "col-span-2" : ""}>
                   <p className="text-xs text-gray-400">Amount</p>
                   {g.merged && g.secondary
-                    ? <p className="font-medium text-gray-700">{formatAmount(g.primary.amount, g.primary.currency)} + {formatAmount(g.secondary.amount, g.secondary.currency)}</p>
+                    ? <p className="font-medium text-gray-700">{formatAmount(Math.abs(g.primary.amount), g.primary.currency)} → {formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}</p>
                     : <p className="font-medium text-gray-700">{formatAmount(g.primary.amount, g.primary.currency)}</p>}
                 </div>
                 {!g.merged && (
