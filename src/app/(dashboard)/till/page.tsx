@@ -156,7 +156,7 @@ export default function TillPage() {
       if (!res.ok) { setConvertError(data.message || "Conversion failed"); return }
       invalidate("till-")
       setShowConvert(false)
-      setConvertForm({ amount: "", exchangeRate: "", description: "" })
+      setConvertForm({ amount: "", exchangeRate: "" })
       fetchAll()
     } catch { setConvertError("Something went wrong.") }
     finally { setConvertLoading(false) }
