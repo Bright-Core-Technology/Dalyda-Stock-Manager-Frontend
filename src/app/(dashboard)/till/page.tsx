@@ -389,7 +389,7 @@ export default function TillPage() {
                 <td className="px-6 py-4">{g.description}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{formatDate(g.transactionDate)}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{g.recordedBy}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{g.merged ? <span className="text-xs text-gray-400">USD/FRANCS</span> : <span className="text-xs text-gray-400">{g.primary.currency}</span>}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{g.merged ? <span className="text-xs text-gray-600">USD/FRANCS</span> : <span className="text-xs text-gray-600">{g.primary.currency}</span>}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   {g.merged && g.secondary
                     ? <span>{formatAmount(Math.abs(g.primary.amount), g.primary.currency)} → {formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}</span>
