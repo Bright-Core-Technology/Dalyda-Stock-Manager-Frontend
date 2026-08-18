@@ -403,45 +403,29 @@ export default function AddSalePage() {
 
         {/* Advance Options */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <h2 className="font-semibold text-gray-800 mb-3">Advance Options</h2>
-          <p className="text-xs text-blue-600 mb-3">Customer Advance</p>
-          <div className="space-y-2">
-            {[
-              { value: "none", label: "No Advance" },
-              { value: "existing", label: "Use Existing Advance" },
-            ].map(opt => (
-              <label key={opt.value} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${advanceOption === opt.value ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}>
-                <input
-                  type="radio"
-                  name="advanceOption"
-                  value={opt.value}
-                  checked={advanceOption === opt.value}
-                  onChange={() => { setAdvanceOption(opt.value as "none" | "existing"); setSelectedAdvance(null) }}
-                  className="accent-blue-600"
-                />
-                <span className="text-sm font-medium text-gray-700">{opt.label}</span>
-              </label>
+          <h2 className="font-semibold text-gray-800 mb-1">Customer Advance <span className="text-gray-400 text-sm font-normal">(optional)</span></h2>
+          <p className="text-xs text-gray-500 mb-3">Select if this customer has an existing advance to apply toward this sale.</p>
+          <select
+            value={selectedAdvance?.id ?? ""}
+            onChange={e => {
+              const found = advances.find(a => a.id === e.target.value) ?? null
+              setSelectedAdvance(found)
+              if (!found) setAdvanceOption("none")
+              else setAdvanceOption("existing")
+            }}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">-- No advance --</option>
+            {advances.map((a, i) => (
+              <option key={a.id ?? i} value={a.id}>
+                {a.customerName} — Balance: ${a.amount}
+              </option>
             ))}
-          </div>
-
-          {advanceOption === "existing" && (
-            <div className="mt-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select Customer Advance</label>
-              <select
-                value={selectedAdvance?.id ?? selectedAdvance?.customerName ?? ""}
-                onChange={e => {
-                  const found = advances.find(a => (a.id ?? a.customerName) === e.target.value) ?? null
-                  setSelectedAdvance(found)
-                }}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">-- Select advance --</option>
-                {advances.map((a, i) => (
-                  <option key={a.id ?? a.customerName ?? i} value={a.id ?? a.customerName}>
-                    {a.customerName} — ${a.amount}
-                  </option>
-                ))}
-              </select>
+          </select>
+          {selectedAdvance && (
+            <div className="mt-2 bg-blue-50 border border-blue-100 rounded-lg px-4 py-2 flex items-center justify-between">
+              <span className="text-sm text-blue-700 font-medium">{selectedAdvance.customerName}</span>
+              <span className="text-sm text-blue-600">Available balance: <span className="font-bold">${selectedAdvance.amount}</span></span>
             </div>
           )}
         </div>
