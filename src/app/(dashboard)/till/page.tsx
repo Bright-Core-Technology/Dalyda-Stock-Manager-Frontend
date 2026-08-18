@@ -384,18 +384,25 @@ export default function TillPage() {
           <tbody>
             {loading ? <SkeletonRows cols={isAdmin ? 6 : 5} rows={3} /> : transactions.length === 0 ? (
               <tr key="empty-tx"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-6 text-center text-gray-400 text-sm">No transactions recorded yet.</td></tr>
-            ) : groupTransactions(transactions).map((g, i) => (
+            ) : groupTransactions(transactions).map((g, i) => {
+              const isAdvance = g.primary.type === "ADVANCE_TOPUP" || g.primary.type === "ADVANCE_REFUND"
+              const isTopup = g.primary.type === "ADVANCE_TOPUP"
+              const amountColor = isTopup ? "text-green-600" : g.primary.type === "ADVANCE_REFUND" ? "text-red-500" : g.primary.amount < 0 ? "text-red-500" : "text-gray-800"
+              const label = isTopup ? "Advance Received" : g.primary.type === "ADVANCE_REFUND" ? "Advance Refunded" : g.description
+              return (
               <tr key={g.ids.join("-") ?? i} className="text-sm text-gray-600 border-b hover:bg-gray-50">
-                <td className="px-6 py-4">{g.description}</td>
+                <td className="px-6 py-4">
+                  {isAdvance ? <span className={`font-medium ${isTopup ? "text-green-700" : "text-red-600"}`}>{label}</span> : g.description}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">{formatDate(g.transactionDate)}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{g.recordedBy}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{g.merged ? <span className="text-xs text-gray-600">USD/FRANCS</span> : <span className="text-xs text-gray-600">{g.primary.currency}</span>}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
+                <td className={`px-6 py-4 whitespace-nowrap text-right font-medium ${amountColor}`}>
                   {g.merged && g.secondary
                     ? <span>{formatAmount(Math.abs(g.primary.amount), g.primary.currency)} {g.primary.saleId ? "+" : "→"} {formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}</span>
-                    : formatAmount(g.primary.amount, g.primary.currency)}
+                    : formatAmount(Math.abs(g.primary.amount), g.primary.currency)}
                 </td>
-                {isAdmin && !g.primary.saleId && (
+                {isAdmin && !g.primary.saleId && !isAdvance && (
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => { setEditTx(g); setEditTxForm({ description: g.primary.description, amount: String(g.primary.amount), secondAmount: g.secondary ? String(g.secondary.amount) : "" }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>
@@ -404,7 +411,8 @@ export default function TillPage() {
                   </td>
                 )}
               </tr>
-            ))}
+            )})}
+
           </tbody>
         </table>
         </div>
@@ -413,9 +421,14 @@ export default function TillPage() {
         <div className="block md:hidden">
           {loading ? <SkeletonCards rows={3} /> : transactions.length === 0 ? (
             <p className="px-4 py-6 text-center text-gray-400 text-sm">No transactions recorded yet.</p>
-          ) : groupTransactions(transactions).map((g, i) => (
+          ) : groupTransactions(transactions).map((g, i) => {
+            const isAdvance = g.primary.type === "ADVANCE_TOPUP" || g.primary.type === "ADVANCE_REFUND"
+            const isTopup = g.primary.type === "ADVANCE_TOPUP"
+            const amountColor = isTopup ? "text-green-600" : g.primary.type === "ADVANCE_REFUND" ? "text-red-500" : g.primary.amount < 0 ? "text-red-500" : "text-gray-700"
+            const label = isTopup ? "Advance Received" : g.primary.type === "ADVANCE_REFUND" ? "Advance Refunded" : g.description
+            return (
             <div key={g.ids.join("-") ?? i} className="relative bg-white border-b p-4">
-              {isAdmin && !g.primary.saleId && (
+              {isAdmin && !g.primary.saleId && !isAdvance && (
                 <div className="absolute top-4 right-4 flex gap-1">
                   <button onClick={() => { setEditTx(g); setEditTxForm({ description: g.primary.description, amount: String(g.primary.amount), secondAmount: g.secondary ? String(g.secondary.amount) : "" }); setEditTxError(null) }} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"><SquarePen className="w-4 h-4" /></button>
                   <button onClick={() => { setDeleteTx(g); setDeleteError(null) }} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
@@ -424,13 +437,13 @@ export default function TillPage() {
               <div className="grid grid-cols-2 gap-2 text-sm pr-8">
                 <div className="col-span-2">
                   <p className="text-xs text-gray-400">Description</p>
-                  <p className="font-medium text-gray-700">{g.description}</p>
+                  <p className={`font-medium ${isAdvance ? (isTopup ? "text-green-700" : "text-red-600") : "text-gray-700"}`}>{label}</p>
                 </div>
                 <div className={g.merged ? "col-span-2" : ""}>
                   <p className="text-xs text-gray-400">Amount</p>
                   {g.merged && g.secondary
                     ? <p className="font-medium text-gray-700">{formatAmount(Math.abs(g.primary.amount), g.primary.currency)} {g.primary.saleId ? "+" : "→"} {formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}</p>
-                    : <p className="font-medium text-gray-700">{formatAmount(g.primary.amount, g.primary.currency)}</p>}
+                    : <p className={`font-medium ${amountColor}`}>{formatAmount(Math.abs(g.primary.amount), g.primary.currency)}</p>}
                 </div>
                 {!g.merged && (
                   <div>
@@ -448,7 +461,8 @@ export default function TillPage() {
                 </div>
               </div>
             </div>
-          ))}
+          )
+          })}
         </div>
       </div>
 

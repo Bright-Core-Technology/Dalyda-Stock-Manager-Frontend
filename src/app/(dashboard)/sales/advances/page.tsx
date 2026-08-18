@@ -299,7 +299,10 @@ export default function AdvancesPage() {
               </div>
               <button onClick={() => setDeleteItem(null)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-gray-600 text-sm mb-4">Delete the advance for <span className="font-medium">{deleteItem.customerName}</span>? This action cannot be undone.</p>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+              <p className="text-amber-800 text-sm font-medium mb-1">⚠ Cash will be returned</p>
+              <p className="text-amber-700 text-sm">Deleting this advance will record a refund of <span className="font-bold">${deleteItem.amount}</span> to the till. This means <span className="font-bold">${deleteItem.amount}</span> cash was returned to <span className="font-medium">{deleteItem.customerName}</span>. Only continue if you have actually returned the cash.</p>
+            </div>
             {deleteError && (
               <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mb-4">
                 <span>⚠</span><p>{deleteError}</p>

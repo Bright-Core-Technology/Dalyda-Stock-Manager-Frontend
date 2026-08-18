@@ -190,24 +190,31 @@ export default function TillTransactionsPage() {
                 <tr key="empty">
                   <td colSpan={isAdmin ? 6 : 5} className="px-6 py-8 text-center text-gray-400 text-sm">No transactions found.</td>
                 </tr>
-              ) : groups.map((g, i) => (
+              ) : groups.map((g, i) => {
+                const isAdvance = g.primary.type === "ADVANCE_TOPUP" || g.primary.type === "ADVANCE_REFUND"
+                const isTopup = g.primary.type === "ADVANCE_TOPUP"
+                const amountColor = g.primary.type === "ADVANCE_TOPUP" ? "text-green-600" : g.primary.type === "ADVANCE_REFUND" ? "text-red-500" : g.primary.amount < 0 ? "text-red-500" : "text-gray-800"
+                const label = g.primary.type === "ADVANCE_TOPUP" ? "Advance Received" : g.primary.type === "ADVANCE_REFUND" ? "Advance Refunded" : g.description
+                return (
                 <tr key={g.ids.join("-") ?? i} className="text-sm text-gray-700 border-b hover:bg-gray-50">
-                  <td className="px-6 py-4">{g.description}</td>
+                  <td className="px-6 py-4">
+                    {isAdvance ? <span className={`font-medium ${isTopup ? "text-green-700" : "text-red-600"}`}>{label}</span> : g.description}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">{formatDateTime(g.transactionDate)}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{g.recordedBy}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {g.merged ? <span className="text-xs text-gray-600">USD/FRANCS</span> : <span className="text-xs text-gray-600">{g.primary.currency === "USD" ? "USD" : "Francs"}</span>}
                   </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-right font-medium ${g.primary.amount < 0 ? "text-red-500" : "text-gray-800"}`}>
+                  <td className={`px-6 py-4 whitespace-nowrap text-right font-medium ${amountColor}`}>
                     {g.merged && g.secondary ? (
                       <span className="flex items-center justify-end gap-1">
                         <span>{formatAmount(Math.abs(g.primary.amount), g.primary.currency)}</span>
                         <span className="text-gray-400">{g.primary.saleId ? "+" : "→"}</span>
                         <span>{formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}</span>
                       </span>
-                    ) : formatAmount(g.primary.amount, g.primary.currency)}
+                    ) : formatAmount(Math.abs(g.primary.amount), g.primary.currency)}
                   </td>
-                  {isAdmin && !g.primary.saleId && (
+                  {isAdmin && !g.primary.saleId && !isAdvance && (
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -228,7 +235,8 @@ export default function TillTransactionsPage() {
                     </td>
                   )}
                 </tr>
-              ))}
+              )
+              })}
             </tbody>
           </table>
         </div>
@@ -237,9 +245,14 @@ export default function TillTransactionsPage() {
         <div className="block md:hidden">
           {loading ? <SkeletonCards rows={6} /> : groups.length === 0 ? (
             <p className="px-4 py-8 text-center text-gray-400 text-sm">No transactions found.</p>
-          ) : groups.map((g, i) => (
+          ) : groups.map((g, i) => {
+            const isAdvance = g.primary.type === "ADVANCE_TOPUP" || g.primary.type === "ADVANCE_REFUND"
+            const isTopup = g.primary.type === "ADVANCE_TOPUP"
+            const amountColor = isTopup ? "text-green-600" : g.primary.type === "ADVANCE_REFUND" ? "text-red-500" : g.primary.amount < 0 ? "text-red-500" : "text-gray-800"
+            const label = isTopup ? "Advance Received" : g.primary.type === "ADVANCE_REFUND" ? "Advance Refunded" : g.description
+            return (
             <div key={g.ids.join("-") ?? i} className="relative bg-white border-b p-4">
-              {isAdmin && !g.primary.saleId && (
+              {isAdmin && !g.primary.saleId && !isAdvance && (
                 <div className="absolute top-4 right-4 flex gap-1">
                   <button
                     onClick={() => { setEditTarget(g); setEditDescription(g.primary.description); setEditAmount(String(g.primary.amount)); setEditSecondAmount(g.secondary ? String(g.secondary.amount) : ""); setEditError("") }}
@@ -260,7 +273,7 @@ export default function TillTransactionsPage() {
               <div className="grid grid-cols-2 gap-2 text-sm pr-8">
                 <div className="col-span-2">
                   <p className="text-xs text-gray-400">Description</p>
-                  <p className="font-medium text-gray-700">{g.description}</p>
+                  <p className={`font-medium ${isAdvance ? (isTopup ? "text-green-700" : "text-red-600") : "text-gray-700"}`}>{label}</p>
                 </div>
                 <div className={g.merged ? "col-span-2" : ""}>
                   <p className="text-xs text-gray-400">Amount</p>
@@ -269,8 +282,8 @@ export default function TillTransactionsPage() {
                       {formatAmount(Math.abs(g.primary.amount), g.primary.currency)} {g.primary.saleId ? "+" : "→"} {formatAmount(Math.abs(g.secondary.amount), g.secondary.currency)}
                     </p>
                   ) : (
-                    <p className={`font-medium ${g.primary.amount < 0 ? "text-red-500" : "text-gray-800"}`}>
-                      {formatAmount(g.primary.amount, g.primary.currency)}
+                    <p className={`font-medium ${amountColor}`}>
+                      {formatAmount(Math.abs(g.primary.amount), g.primary.currency)}
                     </p>
                   )}
                 </div>
@@ -290,7 +303,7 @@ export default function TillTransactionsPage() {
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
 
         {/* Pagination */}
