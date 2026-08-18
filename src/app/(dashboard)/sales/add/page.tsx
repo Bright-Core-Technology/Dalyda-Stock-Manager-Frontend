@@ -65,7 +65,8 @@ export default function AddSalePage() {
         ? francsInUsd
         : (Number(usdReceived) || 0) + francsInUsd
   ) * 100) / 100
-  const advanceAmount = advanceOption === "existing" && selectedAdvance ? selectedAdvance.amount : 0
+  const advanceBalance = advanceOption === "existing" && selectedAdvance ? selectedAdvance.amount : 0
+  const advanceAmount = Math.min(advanceBalance, Math.max(0, Math.round((totalPrice - cashPayment) * 100) / 100))
   const totalPayment = Math.round((cashPayment + advanceAmount) * 100) / 100
   const debtAmount = Math.max(0, Math.round((totalPrice - totalPayment) * 100) / 100)
   const overpayment = advanceOption === "none" && cashPayment > totalPrice && totalPrice > 0
