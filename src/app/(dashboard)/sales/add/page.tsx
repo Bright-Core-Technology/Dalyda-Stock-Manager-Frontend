@@ -183,10 +183,20 @@ export default function AddSalePage() {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.message || "Failed to record sale"); return }
+
+      if (debtAmount > 0 && debtCustomerName.trim()) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/debt/add`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ customerName: debtCustomerName.trim(), amount: debtAmount }),
+        })
+      }
+
       invalidate("sales-")
       invalidate("stock-")
       invalidate("advances-")
       invalidate("till-")
+      invalidate("debts-")
       router.replace("/sales")
     } catch {
       setError("Something went wrong. Please try again.")
