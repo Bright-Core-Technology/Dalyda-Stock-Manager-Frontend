@@ -77,6 +77,7 @@ export default function DebtsPage() {
         return
       }
       invalidate("debts-")
+      invalidate("till-")
       setPage(0)
       setPayItem(null)
       setPayAmount("")
@@ -104,6 +105,7 @@ export default function DebtsPage() {
       const data = await res.json()
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
       invalidate("debts-")
+      invalidate("till-")
       setEditItem(null)
       fetchDebts()
     } catch {
@@ -127,6 +129,7 @@ export default function DebtsPage() {
         return
       }
       invalidate("debts-")
+      invalidate("till-")
       setDeleteItem(null)
       fetchDebts()
     } catch {
