@@ -132,6 +132,7 @@ export default function SalesPage() {
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
       invalidate("sales-")
       invalidate("till-")
+      invalidate("stock-")
       setPage(0)
       setEditItem(null)
       await fetchSales()
@@ -158,6 +159,7 @@ export default function SalesPage() {
       invalidate("sales-")
       invalidate("sales-stats-")
       invalidate("till-")
+      invalidate("stock-")
       setPage(0)
       setDeleteItem(null)
       fetchSales()
