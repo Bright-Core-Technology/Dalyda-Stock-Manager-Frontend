@@ -85,6 +85,7 @@ export default function AdvancesPage() {
       const data = await res.json()
       if (!res.ok) { setAddError(data.message || "Failed to add advance"); return }
       invalidate("advances-")
+      invalidate("till-")
       setShowAdd(false)
       setAddForm({ customerName: "", amount: "", currency: "USD" })
       fetchAdvances()
@@ -111,6 +112,7 @@ export default function AdvancesPage() {
       const data = await res.json()
       if (!res.ok) { setEditError(data.message || "Update failed"); return }
       invalidate("advances-")
+      invalidate("till-")
       setPage(0)
       setEditItem(null)
       fetchAdvances()
@@ -135,6 +137,7 @@ export default function AdvancesPage() {
         return
       }
       invalidate("advances-")
+      invalidate("till-")
       setPage(0)
       setDeleteItem(null)
       fetchAdvances()
