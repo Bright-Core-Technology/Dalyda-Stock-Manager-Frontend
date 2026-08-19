@@ -74,10 +74,12 @@ export default function AddSalePage() {
   const advanceTopup = advanceOption === "existing" && selectedAdvance && cashOverpayment
   const advanceTopupAmount = advanceTopup ? Math.round((cashPayment - totalPrice) * 100) / 100 : 0
   // When advance is selected and debt remains, use advance customer name automatically
-  const debtCustomerResolved = advanceOption === "existing" && selectedAdvance && debtAmount > 0
-    ? selectedAdvance.customerName
-    : debtCustomerName
-  const needsCustomerName = (overpayment || debtAmount > 0) && !debtCustomerResolved
+  const advanceCoversName = advanceOption === "existing" && selectedAdvance && debtAmount > 0
+  const debtCustomerResolved = advanceCoversName ? selectedAdvance!.customerName : debtCustomerName
+  // Show the name field when debt/overpayment exists and advance doesn't auto-supply the name
+  const showCustomerNameField = (overpayment || debtAmount > 0) && !advanceCoversName
+  // Validation: field is shown but not yet filled
+  const needsCustomerName = showCustomerNameField && !debtCustomerName.trim()
 
   const today = new Date().toISOString().split("T")[0]
 
@@ -490,7 +492,7 @@ export default function AddSalePage() {
             </div>
           )}
 
-          {needsCustomerName && (
+          {showCustomerNameField && (
             <div className="mt-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Customer Name <span className="text-red-500">*</span>
