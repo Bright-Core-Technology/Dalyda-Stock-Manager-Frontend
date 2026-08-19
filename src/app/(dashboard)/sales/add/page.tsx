@@ -69,8 +69,15 @@ export default function AddSalePage() {
   const advanceAmount = Math.min(advanceBalance, Math.max(0, Math.round((totalPrice - cashPayment) * 100) / 100))
   const totalPayment = Math.round((cashPayment + advanceAmount) * 100) / 100
   const debtAmount = Math.max(0, Math.round((totalPrice - totalPayment) * 100) / 100)
-  const overpayment = advanceOption === "none" && cashPayment > totalPrice && totalPrice > 0
-  const needsCustomerName = overpayment || debtAmount > 0
+  const cashOverpayment = cashPayment > totalPrice && totalPrice > 0
+  const overpayment = advanceOption === "none" && cashOverpayment
+  const advanceTopup = advanceOption === "existing" && selectedAdvance && cashOverpayment
+  const advanceTopupAmount = advanceTopup ? Math.round((cashPayment - totalPrice) * 100) / 100 : 0
+  // When advance is selected and debt remains, use advance customer name automatically
+  const debtCustomerResolved = advanceOption === "existing" && selectedAdvance && debtAmount > 0
+    ? selectedAdvance.customerName
+    : debtCustomerName
+  const needsCustomerName = (overpayment || debtAmount > 0) && !debtCustomerResolved
 
   const today = new Date().toISOString().split("T")[0]
 
@@ -150,6 +157,7 @@ export default function AddSalePage() {
       setError("Please enter the exchange rate (FC per $1)."); return
     }
     if (needsCustomerName && !debtCustomerName.trim()) { setError("Customer name is required."); return }
+    const customerName = debtCustomerResolved || debtCustomerName.trim()
 
     setError(null)
     setIsLoading(true)
@@ -173,8 +181,8 @@ export default function AddSalePage() {
       if (advanceOption === "existing" && selectedAdvance) {
         body.advanceId = selectedAdvance.id ?? undefined
       }
-      if (needsCustomerName && debtCustomerName.trim()) {
-        body.customerName = debtCustomerName.trim()
+      if (customerName) {
+        body.customerName = customerName
       }
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sales/add`, {
@@ -185,11 +193,11 @@ export default function AddSalePage() {
       const data = await res.json()
       if (!res.ok) { setError(data.message || "Failed to record sale"); return }
 
-      if (debtAmount > 0 && debtCustomerName.trim()) {
+      if (debtAmount > 0 && customerName) {
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/debt/add`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ customerName: debtCustomerName.trim(), amount: debtAmount }),
+          body: JSON.stringify({ customerName, amount: debtAmount }),
         })
       }
 
@@ -462,10 +470,23 @@ export default function AddSalePage() {
             </div>
           )}
 
+          {advanceTopup && (
+            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3 flex justify-between items-center">
+              <span className="text-sm text-green-700 font-medium">Added to {selectedAdvance!.customerName}&apos;s advance:</span>
+              <span className="text-sm font-bold text-green-700">+${advanceTopupAmount.toFixed(2)}</span>
+            </div>
+          )}
+
           {debtAmount > 0 && (
             <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 flex justify-between items-center">
               <span className="text-sm text-red-600 font-medium">Debt remaining:</span>
               <span className="text-sm font-bold text-red-600">${debtAmount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {debtAmount > 0 && debtCustomerResolved && (
+            <div className="mt-2 bg-blue-50 border border-blue-100 rounded-lg px-4 py-2 text-sm text-blue-700">
+              Debt will be recorded under <span className="font-medium">{debtCustomerResolved}</span>
             </div>
           )}
 
