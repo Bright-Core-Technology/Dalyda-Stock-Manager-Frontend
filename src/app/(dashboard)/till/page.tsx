@@ -386,13 +386,11 @@ export default function TillPage() {
               <tr key="empty-tx"><td colSpan={isAdmin ? 6 : 5} className="px-6 py-6 text-center text-gray-400 text-sm">No transactions recorded yet.</td></tr>
             ) : groupTransactions(transactions).map((g, i) => {
               const isAdvance = g.primary.type === "ADVANCE_TOPUP" || g.primary.type === "ADVANCE_REFUND"
-              const isTopup = g.primary.type === "ADVANCE_TOPUP"
-              const amountColor = isTopup ? "text-green-600" : g.primary.type === "ADVANCE_REFUND" ? "text-red-500" : g.primary.amount < 0 ? "text-red-500" : "text-gray-800"
-              const label = g.description
+              const amountColor = g.primary.type === "ADVANCE_REFUND" ? "text-red-500" : g.primary.amount < 0 ? "text-red-500" : "text-gray-800"
               return (
               <tr key={g.ids.join("-") ?? i} className="text-sm text-gray-600 border-b hover:bg-gray-50">
                 <td className="px-6 py-4">
-                  {isAdvance ? <span className={`font-medium ${isTopup ? "text-green-700" : "text-red-600"}`}>{label}</span> : g.description}
+                  {g.description}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">{formatDate(g.transactionDate)}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{g.recordedBy}</td>
@@ -423,9 +421,7 @@ export default function TillPage() {
             <p className="px-4 py-6 text-center text-gray-400 text-sm">No transactions recorded yet.</p>
           ) : groupTransactions(transactions).map((g, i) => {
             const isAdvance = g.primary.type === "ADVANCE_TOPUP" || g.primary.type === "ADVANCE_REFUND"
-            const isTopup = g.primary.type === "ADVANCE_TOPUP"
-            const amountColor = isTopup ? "text-green-600" : g.primary.type === "ADVANCE_REFUND" ? "text-red-500" : g.primary.amount < 0 ? "text-red-500" : "text-gray-700"
-            const label = isTopup ? "Advance Received" : g.primary.type === "ADVANCE_REFUND" ? "Advance Refunded" : g.description
+            const amountColor = g.primary.type === "ADVANCE_REFUND" ? "text-red-500" : g.primary.amount < 0 ? "text-red-500" : "text-gray-700"
             return (
             <div key={g.ids.join("-") ?? i} className="relative bg-white border-b p-4">
               {isAdmin && !g.primary.saleId && !isAdvance && (
@@ -437,7 +433,7 @@ export default function TillPage() {
               <div className="grid grid-cols-2 gap-2 text-sm pr-8">
                 <div className="col-span-2">
                   <p className="text-xs text-gray-400">Description</p>
-                  <p className={`font-medium ${isAdvance ? (isTopup ? "text-green-700" : "text-red-600") : "text-gray-700"}`}>{label}</p>
+                  <p className="font-medium text-gray-700">{g.description}</p>
                 </div>
                 <div className={g.merged ? "col-span-2" : ""}>
                   <p className="text-xs text-gray-400">Amount</p>
