@@ -194,7 +194,7 @@ export default function TillTransactionsPage() {
                 const isAdvance = g.primary.type === "ADVANCE_TOPUP" || g.primary.type === "ADVANCE_REFUND"
                 const isTopup = g.primary.type === "ADVANCE_TOPUP"
                 const amountColor = g.primary.type === "ADVANCE_TOPUP" ? "text-green-600" : g.primary.type === "ADVANCE_REFUND" ? "text-red-500" : g.primary.amount < 0 ? "text-red-500" : "text-gray-800"
-                const label = g.primary.type === "ADVANCE_TOPUP" ? "Advance Received" : g.primary.type === "ADVANCE_REFUND" ? "Advance Refunded" : g.description
+                const label = g.description
                 return (
                 <tr key={g.ids.join("-") ?? i} className="text-sm text-gray-700 border-b hover:bg-gray-50">
                   <td className="px-6 py-4">
