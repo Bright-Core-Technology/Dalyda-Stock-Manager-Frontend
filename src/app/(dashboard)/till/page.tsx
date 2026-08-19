@@ -251,7 +251,7 @@ export default function TillPage() {
 
       {/* Balance Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-        <div className="bg-green-600 rounded-xl p-5 text-white">
+        <div className={`${usdBalance < 0 ? "bg-red-600" : "bg-green-600"} rounded-xl p-5 text-white`}>
           <p className="text-xs opacity-80">Total Dollars</p>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-3xl font-bold">${usdBalance.toFixed(2)}</span>
