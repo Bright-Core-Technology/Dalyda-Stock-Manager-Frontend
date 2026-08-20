@@ -106,6 +106,7 @@ export default function TillTransactionsPage() {
         }
       }
       invalidate("till-transactions-")
+      invalidate("till-")
       setReverseTarget(null)
       fetchTransactions(page)
     } catch {
@@ -149,6 +150,7 @@ export default function TillTransactionsPage() {
         }
       }
       invalidate("till-transactions-")
+      invalidate("till-")
       setEditTarget(null)
       fetchTransactions(page)
     } catch {
