@@ -11,7 +11,6 @@ export default function SalesPage() {
   const token = useAuthStore(state => state.token)
   const role = useAuthStore(state => state.role)
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN"
-  const isSuperAdmin = role === "SUPER_ADMIN"
 
   const [sales, setSales] = useState<any[]>([])
   const [search, setSearch] = useState("")
@@ -253,12 +252,12 @@ export default function SalesPage() {
               <th className="px-6 py-3 whitespace-nowrap">Unit Price</th>
               <th className="px-6 py-3 whitespace-nowrap">Total</th>
               {isAdmin && <th className="px-6 py-3 whitespace-nowrap">Recorded By</th>}
-              {isSuperAdmin && <th className="px-6 py-3 whitespace-nowrap text-right">Actions</th>}
+              {isAdmin && <th className="px-6 py-3 whitespace-nowrap text-right">Actions</th>}
             </tr>
           </thead>
           <tbody>
-            {loading ? <SkeletonRows cols={isSuperAdmin ? 9 : isAdmin ? 8 : 7} /> : sales.length === 0 ? (
-              <tr key="empty"><td colSpan={isSuperAdmin ? 9 : isAdmin ? 8 : 7} className="px-6 py-8 text-center text-gray-400 text-sm">No sales found.</td></tr>
+            {loading ? <SkeletonRows cols={isAdmin ? 9 : 7} /> : sales.length === 0 ? (
+              <tr key="empty"><td colSpan={isAdmin ? 9 : 7} className="px-6 py-8 text-center text-gray-400 text-sm">No sales found.</td></tr>
             ) : sales.map((sale, index) => (
               <tr key={sale.id ?? index} className="text-sm text-gray-600 border-b hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">{sale.date}</td>
@@ -269,7 +268,7 @@ export default function SalesPage() {
                 <td className="px-6 py-4 whitespace-nowrap">${(sale.price ?? 0).toFixed(2)}</td>
                 <td className="px-6 py-4 whitespace-nowrap">${(sale.totalPrice ?? 0).toFixed(2)}</td>
                 {isAdmin && <td className="px-6 py-4 whitespace-nowrap">{sale.recordedBy}</td>}
-                {isSuperAdmin && (
+                {isAdmin && (
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="flex items-center justify-end gap-3">
                       <button onClick={() => { setEditItem(sale); setEditError(null) }} className="text-blue-500 hover:text-blue-700"><SquarePen className="w-4 h-4" /></button>
@@ -296,7 +295,7 @@ export default function SalesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-gray-800 text-sm">${(sale.totalPrice ?? 0).toFixed(2)}</span>
-                  {isSuperAdmin && (
+                  {isAdmin && (
                     <>
                       <button onClick={() => { setEditItem(sale); setEditError(null) }} className="text-blue-500 hover:text-blue-700"><SquarePen className="w-4 h-4" /></button>
                       <button onClick={() => setDeleteItem(sale)} className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>

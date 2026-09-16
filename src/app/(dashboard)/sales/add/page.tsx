@@ -17,6 +17,14 @@ interface StockItem {
   quantity?: number
 }
 
+// Local calendar date as YYYY-MM-DD — toISOString() would give the UTC day,
+// which is the previous date here for sales recorded late in the evening.
+function todayLocal() {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 export default function AddSalePage() {
   const token = useAuthStore(state => state.token)
   const email = useAuthStore(state => state.email)
@@ -39,6 +47,7 @@ export default function AddSalePage() {
   const [weight, setWeight] = useState("")
   const [quantity, setQuantity] = useState("")
   const [unitPrice, setUnitPrice] = useState("")
+  const [saleDate, setSaleDate] = useState(todayLocal())
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState<"USD" | "FRANCS" | "BOTH">("USD")
@@ -80,8 +89,6 @@ export default function AddSalePage() {
   const showCustomerNameField = (overpayment || debtAmount > 0) && !advanceCoversName
   // Validation: field is shown but not yet filled
   const needsCustomerName = showCustomerNameField && !debtCustomerName.trim()
-
-  const today = new Date().toISOString().split("T")[0]
 
   // Load advances on mount
   useEffect(() => {
@@ -155,6 +162,7 @@ export default function AddSalePage() {
     if (!selectedItem) { setError("Please search and select an item first."); return }
     if (!quantity || Number(quantity) <= 0) { setError("Please enter a valid quantity."); return }
     if (!unitPrice || Number(unitPrice) <= 0) { setError("Please enter a valid unit price."); return }
+    if (!saleDate) { setError("Please select the sale date."); return }
     if ((paymentMethod === "FRANCS" || paymentMethod === "BOTH") && (!exchangeRate || Number(exchangeRate) <= 0)) {
       setError("Please enter the exchange rate (FC per $1)."); return
     }
@@ -168,7 +176,7 @@ export default function AddSalePage() {
         code: itemCode,
         quantity: Number(quantity),
         price: Number(unitPrice),
-        date: today,
+        date: saleDate,
         amountReceived: paymentMethod === "FRANCS"
           ? Number(francsReceived) || 0
           : Number(usdReceived) || 0,
@@ -327,6 +335,17 @@ export default function AddSalePage() {
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sale Date <span className="text-red-500">*</span></label>
+              <input
+                type="date"
+                value={saleDate}
+                onChange={e => setSaleDate(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">Defaults to today. Change it to record a sale from an earlier date.</p>
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
@@ -517,7 +536,7 @@ export default function AddSalePage() {
         )}
 
         <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
-          <span>Date: {today}</span>
+          <span>Date: {saleDate || "—"}</span>
           <span>Recorded by: <span className="text-blue-500">{email}</span></span>
         </div>
 
