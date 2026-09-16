@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useAuthStore } from "@/store/authStore"
 import Link from "next/link"
 import { ArrowLeft, Download, FileText, Upload } from "lucide-react"
+import { invalidate } from "@/lib/cache"
 
 export default function BulkUploadPage() {
   const token = useAuthStore(state => state.token)
@@ -12,6 +13,9 @@ export default function BulkUploadPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<any | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Per-row validation failures from a rejected upload — the only place the
+  // user learns what to fix, so they must survive the non-2xx path.
+  const [rowErrors, setRowErrors] = useState<string[]>([])
 
   async function handleDownloadTemplate() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stock/template/download`, {
@@ -29,6 +33,7 @@ export default function BulkUploadPage() {
   async function handleUpload() {
     if (!file) { setError("Please choose a file first"); return }
     setError(null)
+    setRowErrors([])
     setResult(null)
     setIsLoading(true)
     try {
@@ -40,7 +45,15 @@ export default function BulkUploadPage() {
         body: formData,
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.message || "Upload failed"); return }
+      if (!res.ok) {
+        // Upload is all-or-nothing: nothing was saved, so don't touch the
+        // stock cache. Surface every faulty row so the sheet can be fixed
+        // in one pass.
+        setError(data.message ?? "Upload failed")
+        setRowErrors(data.data?.errors ?? [])
+        return
+      }
+      invalidate("stock-")
       setResult(data.data)
       setFile(null)
     } catch {
@@ -69,6 +82,7 @@ export default function BulkUploadPage() {
           <li>2. Fill in your stock data following the template format</li>
           <li>3. Save the file as CSV format</li>
           <li>4. Upload the completed file using the upload area below</li>
+          <li>5. If any row is invalid, nothing is imported — fix the rows listed and upload again</li>
         </ol>
         <button
           onClick={handleDownloadTemplate}
@@ -92,7 +106,7 @@ export default function BulkUploadPage() {
             type="file"
             accept=".xlsx,.csv"
             className="hidden"
-            onChange={e => { setFile(e.target.files?.[0] ?? null); setResult(null); setError(null) }}
+            onChange={e => { setFile(e.target.files?.[0] ?? null); setResult(null); setError(null); setRowErrors([]) }}
           />
         </label>
 
@@ -140,8 +154,23 @@ export default function BulkUploadPage() {
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg mt-4">
-          <span>⚠</span><p>{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 mt-4">
+          <div className="flex items-start gap-2 text-red-600 text-sm">
+            <span>⚠</span><p className="font-medium">{error}</p>
+          </div>
+          {rowErrors.length > 0 && (
+            <>
+              <p className="text-sm font-medium text-red-700 mt-4">Rows that need fixing</p>
+              <ul className="mt-1.5 text-sm text-red-600 list-disc list-inside space-y-1">
+                {rowErrors.map((e, i) => <li key={i}>{e}</li>)}
+              </ul>
+              <p className="text-xs text-red-500 mt-4">
+                Nothing was imported. Row numbers match your spreadsheet, header included.
+                Fix these rows and upload the <span className="font-medium">same corrected file</span> again —
+                don&apos;t remove the rows that passed, or they&apos;ll be left out.
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -149,14 +178,8 @@ export default function BulkUploadPage() {
       {result && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-6 mt-4">
           <p className="font-medium text-green-700 mb-2">Upload Complete</p>
-          <p className="text-sm text-green-600">Total rows: {result.totalRows}</p>
-          <p className="text-sm text-green-600">Successful: {result.successfulRows}</p>
-          <p className="text-sm text-red-500">Failed: {result.failedRows}</p>
-          {result.errors?.length > 0 && (
-            <ul className="mt-2 text-sm text-red-500 list-disc list-inside">
-              {result.errors.map((e: string, i: number) => <li key={i}>{e}</li>)}
-            </ul>
-          )}
+          <p className="text-sm text-green-600">All {result.totalRows} item(s) were added to stock.</p>
+          <Link href="/stock" className="inline-block text-sm text-blue-600 hover:underline mt-3">View stock →</Link>
         </div>
       )}
     </div>
