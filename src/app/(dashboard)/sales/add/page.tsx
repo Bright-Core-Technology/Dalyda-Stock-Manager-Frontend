@@ -163,6 +163,9 @@ export default function AddSalePage() {
     if (!quantity || Number(quantity) <= 0) { setError("Please enter a valid quantity."); return }
     if (!unitPrice || Number(unitPrice) <= 0) { setError("Please enter a valid unit price."); return }
     if (!saleDate) { setError("Please select the sale date."); return }
+    // YYYY-MM-DD compares correctly as a string. The `max` on the input only
+    // guards the picker; a typed date still reaches here.
+    if (saleDate > todayLocal()) { setError("Sale date cannot be in the future."); return }
     if ((paymentMethod === "FRANCS" || paymentMethod === "BOTH") && (!exchangeRate || Number(exchangeRate) <= 0)) {
       setError("Please enter the exchange rate (FC per $1)."); return
     }
@@ -342,10 +345,11 @@ export default function AddSalePage() {
               <input
                 type="date"
                 value={saleDate}
+                max={todayLocal()}
                 onChange={e => setSaleDate(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-xs text-gray-400 mt-1">Defaults to today. Change it to record a sale from an earlier date.</p>
+              <p className="text-xs text-gray-400 mt-1">Defaults to today. You can back-date a sale, but not set a future date.</p>
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
