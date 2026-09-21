@@ -61,6 +61,9 @@ export default function AddSalePage() {
 
   const [debtCustomerName, setDebtCustomerName] = useState("")
   const [error, setError] = useState<string | null>(null)
+  // A 409 means the code is stocked in several containers and none was
+  // pinned — that's a question for the operator, not a failed sale.
+  const [containerPrompt, setContainerPrompt] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const totalPrice = Math.round(((Number(quantity) || 0) * (Number(unitPrice) || 0)) * 100) / 100
@@ -145,6 +148,7 @@ export default function AddSalePage() {
     if (item.price != null) setUnitPrice(String(item.price))
     setSearchOpen(false)
     setError(null)
+    setContainerPrompt(null)
   }
 
   function clearItem() {
@@ -173,6 +177,7 @@ export default function AddSalePage() {
     const customerName = debtCustomerResolved || debtCustomerName.trim()
 
     setError(null)
+    setContainerPrompt(null)
     setIsLoading(true)
     try {
       const body: Record<string, unknown> = {
@@ -191,6 +196,13 @@ export default function AddSalePage() {
         body.secondCurrency = "FRANCS"
       }
 
+      // A code can be stocked in several containers, so pin the sale to the
+      // container the operator picked. Optional server-side — a code held in
+      // one container resolves without it.
+      if (containerName) {
+        body.containerName = containerName
+      }
+
       if (advanceOption === "existing" && selectedAdvance) {
         body.advanceId = selectedAdvance.id ?? undefined
       }
@@ -204,6 +216,10 @@ export default function AddSalePage() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
+      if (res.status === 409) {
+        setContainerPrompt(data.message ?? "This item code is stocked in more than one container.")
+        return
+      }
       if (!res.ok) { setError(data.message || "Failed to record sale"); return }
 
       if (debtAmount > 0 && customerName) {
@@ -273,9 +289,16 @@ export default function AddSalePage() {
                       onClick={() => selectItem(item)}
                       className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b last:border-b-0 border-gray-100"
                     >
-                      <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                        {item.price != null && (
+                          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">${item.price}</span>
+                        )}
+                      </div>
+                      {/* The same code can appear in several containers, so the
+                          container is what tells two rows apart. */}
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Code: {item.code} · Container: {item.containerName} · Weight: {item.weight}
+                        Code: {item.code} · Container: <span className="font-medium text-blue-600">{item.containerName || "—"}</span> · Weight: {item.weight}
                         {item.quantity !== undefined && ` · Stock: ${item.quantity}`}
                       </p>
                     </button>
@@ -532,6 +555,13 @@ export default function AddSalePage() {
             </div>
           )}
         </div>
+
+        {containerPrompt && (
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-lg">
+            <span>⚠</span>
+            <p>{containerPrompt} Search for the item again and pick the row for the container this sale came from.</p>
+          </div>
+        )}
 
         {error && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
